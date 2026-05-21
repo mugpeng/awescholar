@@ -35,10 +35,10 @@ export AWESCHOLAR_MODEL="gpt-4.1-mini"
 export AWESCHOLAR_API_KEY="sk-..."
 
 # 运行完整流水线
-awescholar run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+awescholar crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
 
 # 或使用配置文件
-awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05-30
+awescholar --config config.json crawler run "foundation model" --date 2025-01-01:2025-05-30
 ```
 
 ## 配置
@@ -65,15 +65,19 @@ awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05
 ## 命令
 
 ```bash
-awescholar -v                              # 显示版本
-awescholar search "query"                  # 搜索 Semantic Scholar
-awescholar annotate                        # 标注数据库中的论文
-awescholar filter --limit 20               # 选择 top 论文
-awescholar report -o report.md             # 生成 Markdown 报告
-awescholar run "query"                     # 完整流水线
-awescholar update --direction new2old --archive data.json   # 合并到存档
-awescholar readme --archive data.json      # 生成 README 表格
-awescholar rss --archive data.json         # 生成 RSS 订阅
+awescholar -v                                         # 显示版本
+
+# 论文发现流水线
+awescholar crawler search "query"                     # 搜索 Semantic Scholar
+awescholar crawler annotate                           # 标注数据库中的论文
+awescholar crawler filter --limit 20                  # 选择 top 论文
+awescholar crawler report -o report.md                # 生成 Markdown 报告
+awescholar crawler run "query"                        # 完整流水线
+
+# 存档管理
+awescholar updater update --direction new2old --archive data.json   # 合并到存档
+awescholar updater readme --archive data.json         # 生成 README 表格
+awescholar updater rss --archive data.json            # 生成 RSS 订阅
 ```
 
 ## 开发
@@ -86,15 +90,15 @@ pytest
 ## 工作流
 
 ```
-Search (Semantic Scholar) -> Annotate (LLM) -> Filter (LLM) -> Report (LLM)
-                                                              |
-                                                              v
-                                                    updater_filter.json
-                                                              |
-                                                    update new2old
-                                                              |
-                                                              v
-                                                    archive.json -> README / RSS
+crawler search -> crawler annotate -> crawler filter -> crawler report
+                                                        |
+                                                        v
+                                              updater_filter.json
+                                                        |
+                                              updater update new2old
+                                                        |
+                                                        v
+                                              archive.json -> updater readme / updater rss
 ```
 
 每个步骤生成一个 JSON 中间文件。你可以独立重新运行任何步骤。

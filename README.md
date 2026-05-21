@@ -35,10 +35,10 @@ export AWESCHOLAR_MODEL="gpt-4.1-mini"
 export AWESCHOLAR_API_KEY="sk-..."
 
 # Run the full pipeline
-awescholar run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+awescholar crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
 
 # Or use a config file
-awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05-30
+awescholar --config config.json crawler run "foundation model" --date 2025-01-01:2025-05-30
 ```
 
 ## Config
@@ -65,15 +65,19 @@ Supported LLM providers (via LiteLLM): OpenAI, DeepSeek, Gemini, Mistral, custom
 ## Commands
 
 ```bash
-awescholar -v                              # Show version
-awescholar search "query"                  # Search Semantic Scholar
-awescholar annotate                        # Annotate papers in DB
-awescholar filter --limit 20               # Select top papers
-awescholar report -o report.md             # Generate Markdown report
-awescholar run "query"                     # Full pipeline
-awescholar update --direction new2old --archive data.json   # Merge to archive
-awescholar readme --archive data.json      # Generate README tables
-awescholar rss --archive data.json         # Generate RSS feed
+awescholar -v                                         # Show version
+
+# Paper discovery pipeline
+awescholar crawler search "query"                     # Search Semantic Scholar
+awescholar crawler annotate                           # Annotate papers in DB
+awescholar crawler filter --limit 20                  # Select top papers
+awescholar crawler report -o report.md                # Generate Markdown report
+awescholar crawler run "query"                        # Full pipeline
+
+# Archive management
+awescholar updater update --direction new2old --archive data.json   # Merge to archive
+awescholar updater readme --archive data.json         # Generate README tables
+awescholar updater rss --archive data.json            # Generate RSS feed
 ```
 
 ## Development
@@ -86,15 +90,15 @@ pytest
 ## Workflow
 
 ```
-Search (Semantic Scholar) -> Annotate (LLM) -> Filter (LLM) -> Report (LLM)
-                                                              |
-                                                              v
-                                                    updater_filter.json
-                                                              |
-                                                    update new2old
-                                                              |
-                                                              v
-                                                    archive.json -> README / RSS
+crawler search -> crawler annotate -> crawler filter -> crawler report
+                                                        |
+                                                        v
+                                              updater_filter.json
+                                                        |
+                                              updater update new2old
+                                                        |
+                                                        v
+                                              archive.json -> updater readme / updater rss
 ```
 
 Each step produces a JSON intermediate file. You can re-run any step independently.

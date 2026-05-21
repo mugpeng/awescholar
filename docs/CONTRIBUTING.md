@@ -45,7 +45,7 @@ Steps are composable. Run the full pipeline with `awescholar run` or individual 
 
 **Data flow**: Each step reads/writes JSON files (`updater.json`, `updater_filter.json`, `report.md`). Re-run any step independently.
 
-**Merge model**: `update --direction new2old` merges new results into a persistent archive. `old2new` enriches new results with archive data.
+**Merge model**: `updater update --direction new2old` merges new results into a persistent archive. `old2new` enriches new results with archive data.
 
 ## Data Model
 

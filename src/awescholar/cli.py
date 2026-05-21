@@ -83,7 +83,7 @@ def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
     session.close()
 
     if not db_papers:
-        print("No papers in database. Run 'awescholar search <query>' first.")
+        print("No papers in database. Run 'awescholar crawler search <query>' first.")
         return 1
 
     papers = [
@@ -107,7 +107,7 @@ def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
 def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
     updater_path = os.path.join(config["db_path"], "updater.json")
     if not os.path.exists(updater_path):
-        print(f"Not found: {updater_path}. Run 'awescholar annotate' first.")
+        print(f"Not found: {updater_path}. Run 'awescholar crawler annotate' first.")
         return 1
 
     with open(updater_path, "r", encoding="utf-8") as f:
@@ -128,7 +128,7 @@ def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
 def cmd_report(args: argparse.Namespace, config: dict) -> int | None:
     filtered_path = os.path.join(config["db_path"], "updater_filter.json")
     if not os.path.exists(filtered_path):
-        print(f"Not found: {filtered_path}. Run 'awescholar filter' first.")
+        print(f"Not found: {filtered_path}. Run 'awescholar crawler filter' first.")
         return 1
 
     with open(filtered_path, "r", encoding="utf-8") as f:
@@ -170,7 +170,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
 def cmd_update(args: argparse.Namespace, config: dict) -> int | None:
     new_path = args.input or os.path.join(config["db_path"], "updater_filter.json")
     if not os.path.exists(new_path):
-        print(f"Not found: {new_path}. Run 'awescholar run' first.")
+        print(f"Not found: {new_path}. Run 'awescholar crawler run' first.")
         return 1
 
     if args.direction == "new2old":
@@ -208,46 +208,46 @@ def main() -> int:
     parser.add_argument("--config", type=str, help="Path to config.json")
     sub = parser.add_subparsers(dest="command")
 
-    # search
-    p = sub.add_parser("search", help="Search Semantic Scholar for papers")
+    # crawler
+    crawler = sub.add_parser("crawler", help="Paper discovery pipeline")
+    crawler_sub = crawler.add_subparsers(dest="crawler_command")
+
+    p = crawler_sub.add_parser("search", help="Search Semantic Scholar for papers")
     p.add_argument("query", type=str, help="Search query string")
     p.add_argument("--limit", type=int, help="Max results (default: 100)")
     p.add_argument("--date", type=str, help="Date range, e.g. 2025-01-01:2025-05-30")
 
-    # annotate
-    sub.add_parser("annotate", help="Annotate papers with domain and category")
+    crawler_sub.add_parser("annotate", help="Annotate papers with domain and category")
 
-    # filter
-    p = sub.add_parser("filter", help="Select top papers by quality and relevance")
+    p = crawler_sub.add_parser("filter", help="Select top papers by quality and relevance")
     p.add_argument("--limit", type=int, help="Number of papers to keep (default: 20)")
 
-    # report
-    p = sub.add_parser("report", help="Generate Markdown report from filtered data")
+    p = crawler_sub.add_parser("report", help="Generate Markdown report from filtered data")
     p.add_argument("-o", "--output", type=str, help="Output file path")
 
-    # run
-    p = sub.add_parser("run", help="Run full pipeline: search, annotate, filter, report")
+    p = crawler_sub.add_parser("run", help="Run full pipeline: search, annotate, filter, report")
     p.add_argument("query", type=str, help="Search query string")
     p.add_argument("--limit-search", type=int, help="Max search results (default: 100)")
     p.add_argument("--limit-filter", type=int, help="Papers to keep after filter (default: 20)")
     p.add_argument("--date", type=str, help="Date range, e.g. 2025-01-01:2025-05-30")
     p.add_argument("-o", "--output", type=str, help="Report output path")
 
-    # update
-    p = sub.add_parser("update", help="Merge data between new results and archive")
+    # updater
+    updater = sub.add_parser("updater", help="Archive data management")
+    updater_sub = updater.add_subparsers(dest="updater_command")
+
+    p = updater_sub.add_parser("update", help="Merge data between new results and archive")
     p.add_argument("--direction", choices=["new2old", "old2new"], required=True)
     p.add_argument("--input", type=str, help="Path to new data JSON")
     p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
 
-    # readme
-    p = sub.add_parser("readme", help="Generate README tables from archive")
+    p = updater_sub.add_parser("readme", help="Generate README tables from archive")
     p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
     p.add_argument("--readme", type=str, help="Output README path")
     p.add_argument("--title", type=str, help="Project title")
     p.add_argument("--description", type=str, help="Project description")
 
-    # rss
-    p = sub.add_parser("rss", help="Generate RSS feed from archive")
+    p = updater_sub.add_parser("rss", help="Generate RSS feed from archive")
     p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
     p.add_argument("-o", "--output", type=str, help="Output RSS file path")
     p.add_argument("--title", type=str, help="Feed title")
@@ -258,12 +258,25 @@ def main() -> int:
         return 0
 
     config = load_config(args.config)
-    handlers = {
-        "search": cmd_search, "annotate": cmd_annotate, "filter": cmd_filter,
-        "report": cmd_report, "run": cmd_run, "update": cmd_update,
-        "readme": cmd_readme, "rss": cmd_rss,
-    }
-    return handlers[args.command](args, config) or 0
+
+    if args.command == "crawler":
+        if not args.crawler_command:
+            crawler.print_help()
+            return 0
+        handlers = {
+            "search": cmd_search, "annotate": cmd_annotate, "filter": cmd_filter,
+            "report": cmd_report, "run": cmd_run,
+        }
+        return handlers[args.crawler_command](args, config) or 0
+
+    if args.command == "updater":
+        if not args.updater_command:
+            updater.print_help()
+            return 0
+        handlers = {
+            "update": cmd_update, "readme": cmd_readme, "rss": cmd_rss,
+        }
+        return handlers[args.updater_command](args, config) or 0
 
 
 if __name__ == "__main__":

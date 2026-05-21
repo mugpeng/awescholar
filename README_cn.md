@@ -1,10 +1,10 @@
 <div align="center">
   <h1>awescholar</h1>
-  <p><strong>Automated scientific literature discovery and curation.</strong></p>
-  <p>Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.</p>
+  <p><strong>自动化科学文献发现与策展。</strong></p>
+  <p>搜索、标注、筛选和报告学术论文 — 并将结果合并到你的 Awesome 列表中。</p>
   <p>
-    <strong>English</strong> ·
-    <a href="./README_cn.md">简体中文</a>
+    <a href="./README.md">English</a> ·
+    <strong>简体中文</strong>
   </p>
   <p>
     <img src="https://img.shields.io/badge/version-0.1.0-7C3AED?style=flat-square" alt="Version">
@@ -17,31 +17,31 @@
   </p>
 </div>
 
-> Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.
+> 搜索、标注、筛选和报告学术论文 — 并将结果合并到你的 Awesome 列表中。
 
-A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained archive. No agent framework — just Python and an LLM API call.
+一个轻量级 CLI 工具，自动化论文策展工作流：查询 Semantic Scholar、用 LLM 标注、按质量筛选、生成 Markdown 报告，并增量合并到维护的存档中。无 agent 框架依赖 — 只需 Python 和 LLM API 调用。
 
-## Install
+## 安装
 
 ```bash
 pip install -e .
 ```
 
-## Quick Start
+## 快速开始
 
 ```bash
-# Set your LLM provider
+# 设置 LLM 提供商
 export AWESCHOLAR_MODEL="gpt-4.1-mini"
 export AWESCHOLAR_API_KEY="sk-..."
 
-# Run the full pipeline
+# 运行完整流水线
 awescholar run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
 
-# Or use a config file
+# 或使用配置文件
 awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05-30
 ```
 
-## Config
+## 配置
 
 ```json
 {
@@ -58,32 +58,32 @@ awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05
 }
 ```
 
-`${VAR}` patterns are expanded from environment variables at load time. Copy `config.example.json` and fill in your values — or set env vars directly and skip the config file.
+`${VAR}` 模式在加载时从环境变量展开。复制 `config.example.json` 并填入你的值 — 或直接设置环境变量，跳过配置文件。
 
-Supported LLM providers (via LiteLLM): OpenAI, DeepSeek, Gemini, Mistral, custom endpoints.
+支持的 LLM 提供商（通过 LiteLLM）：OpenAI、DeepSeek、Gemini、Mistral、自定义端点。
 
-## Commands
+## 命令
 
 ```bash
-awescholar -v                              # Show version
-awescholar search "query"                  # Search Semantic Scholar
-awescholar annotate                        # Annotate papers in DB
-awescholar filter --limit 20               # Select top papers
-awescholar report -o report.md             # Generate Markdown report
-awescholar run "query"                     # Full pipeline
-awescholar update --direction new2old --archive data.json   # Merge to archive
-awescholar readme --archive data.json      # Generate README tables
-awescholar rss --archive data.json         # Generate RSS feed
+awescholar -v                              # 显示版本
+awescholar search "query"                  # 搜索 Semantic Scholar
+awescholar annotate                        # 标注数据库中的论文
+awescholar filter --limit 20               # 选择 top 论文
+awescholar report -o report.md             # 生成 Markdown 报告
+awescholar run "query"                     # 完整流水线
+awescholar update --direction new2old --archive data.json   # 合并到存档
+awescholar readme --archive data.json      # 生成 README 表格
+awescholar rss --archive data.json         # 生成 RSS 订阅
 ```
 
-## Development
+## 开发
 
 ```bash
 pip install -e ".[dev]"
 pytest
 ```
 
-## Workflow
+## 工作流
 
 ```
 Search (Semantic Scholar) -> Annotate (LLM) -> Filter (LLM) -> Report (LLM)
@@ -97,4 +97,4 @@ Search (Semantic Scholar) -> Annotate (LLM) -> Filter (LLM) -> Report (LLM)
                                                     archive.json -> README / RSS
 ```
 
-Each step produces a JSON intermediate file. You can re-run any step independently.
+每个步骤生成一个 JSON 中间文件。你可以独立重新运行任何步骤。

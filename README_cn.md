@@ -78,6 +78,8 @@ awescholar crawler run "query"                        # 完整流水线
 awescholar updater update --direction new2old --archive data.json   # 合并到存档
 awescholar updater readme --archive data.json         # 生成 README 表格
 awescholar updater rss --archive data.json            # 生成 RSS 订阅
+awescholar updater search --archive data.json --by title           # 按标题搜索并添加
+awescholar updater add --archive data.json            # 交互式添加单条记录
 ```
 
 ## 开发

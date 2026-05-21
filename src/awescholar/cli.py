@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 from .pipeline import run_search, run_annotate, run_filter, run_report, run_pipeline
 from .utils import merge_new_to_archive, merge_archive_to_new, update_readme, generate_rss
+from .record import search_and_add, add_interactive
 
 
 def get_version() -> str:
@@ -197,6 +198,14 @@ def cmd_rss(args: argparse.Namespace, config: dict) -> int | None:
     print(f"RSS feed generated at {output}")
 
 
+def cmd_search_record(args: argparse.Namespace, config: dict) -> int | None:
+    search_and_add(archive_path=args.archive, by=args.by, api_key=config["ss_api_key"])
+
+
+def cmd_add(args: argparse.Namespace, config: dict) -> int | None:
+    add_interactive(archive_path=args.archive, categories=config.get("categories"))
+
+
 # ── Main ─────────────────────────────────────────────────────
 
 def main() -> int:
@@ -252,6 +261,13 @@ def main() -> int:
     p.add_argument("-o", "--output", type=str, help="Output RSS file path")
     p.add_argument("--title", type=str, help="Feed title")
 
+    p = updater_sub.add_parser("search", help="Search Semantic Scholar by title/DOI and add to archive")
+    p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
+    p.add_argument("--by", choices=["title", "doi"], default="title", help="Search by title or DOI (default: title)")
+
+    p = updater_sub.add_parser("add", help="Interactively add a single record to archive")
+    p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
@@ -275,6 +291,7 @@ def main() -> int:
             return 0
         handlers = {
             "update": cmd_update, "readme": cmd_readme, "rss": cmd_rss,
+            "search": cmd_search_record, "add": cmd_add,
         }
         return handlers[args.updater_command](args, config) or 0
 

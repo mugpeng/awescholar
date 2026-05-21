@@ -1,0 +1,238 @@
+"""Single-record operations: search by title/DOI and interactive manual entry."""
+
+import json
+import os
+from semanticscholar import SemanticScholar
+
+
+FIELDS = [
+    "year", "title", "team", "team website", "affiliation",
+    "domain", "venue", "paperUrl", "codeUrl", "githubStars",
+]
+
+
+def _get_client(api_key: str | None = None) -> SemanticScholar:
+    key = api_key or os.getenv("SEMANTICSCHOLAR_API_KEY")
+    return SemanticScholar(api_key=key) if key else SemanticScholar()
+
+
+def _paper_to_record(paper) -> dict | None:
+    if not paper:
+        return None
+
+    team = ""
+    if paper.authors:
+        team = paper.authors[-1].name or ""
+
+    year = ""
+    pub_date = getattr(paper, "publicationDate", None)
+    if pub_date:
+        if isinstance(pub_date, str):
+            year = pub_date[:7].replace("-", ".")
+        else:
+            year = pub_date.strftime("%Y.%m")
+    elif getattr(paper, "year", None):
+        year = str(paper.year)
+
+    ext_ids = getattr(paper, "externalIds", None) or {}
+    doi = ext_ids.get("DOI", "")
+
+    venue = getattr(paper, "venue", None) or ""
+    if not venue:
+        journal = getattr(paper, "journal", None)
+        if journal and hasattr(journal, "name"):
+            venue = journal.name or ""
+
+    paper_url = getattr(paper, "url", None) or ""
+    if not paper_url and paper.paperId:
+        paper_url = f"https://www.semanticscholar.org/paper/{paper.paperId}"
+
+    return {
+        "year": year,
+        "title": paper.title or "",
+        "team": team,
+        "team website": "",
+        "affiliation": "",
+        "domain": "",
+        "venue": venue,
+        "paperUrl": paper_url,
+        "codeUrl": "",
+        "githubStars": "",
+        "doi": doi,
+    }
+
+
+def search_by_title(title: str, sch: SemanticScholar) -> dict | None:
+    if not title.strip():
+        return None
+    try:
+        paper = sch.search_paper(
+            title, limit=1, match_title=True,
+            fields=["paperId", "title", "venue", "year",
+                    "publicationDate", "authors", "externalIds", "url", "journal"],
+        )
+        return _paper_to_record(paper)
+    except Exception as e:
+        print(f"  Error: {e}")
+        return None
+
+
+def search_by_doi(doi: str, sch: SemanticScholar) -> dict | None:
+    if not doi.strip():
+        return None
+    try:
+        paper = sch.get_paper(
+            f"DOI:{doi}",
+            fields=["paperId", "title", "venue", "year",
+                    "publicationDate", "authors", "externalIds", "url", "journal"],
+        )
+        return _paper_to_record(paper)
+    except Exception as e:
+        print(f"  Error: {e}")
+        return None
+
+
+def _load_archive(archive_path: str) -> dict | list:
+    if not os.path.exists(archive_path):
+        return {}
+    with open(archive_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _save_archive(archive_path: str, data) -> None:
+    with open(archive_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def _is_duplicate(papers: list, record: dict) -> bool:
+    for existing in papers:
+        if existing.get("title") == record["title"]:
+            return True
+        if record.get("doi") and existing.get("doi") == record["doi"]:
+            return True
+    return False
+
+
+def search_and_add(archive_path: str, by: str = "title", api_key: str | None = None) -> None:
+    """Search Semantic Scholar by title or DOI and add records to archive."""
+    print(f"\nSemantic Scholar Paper Search")
+    print(f"Search by: {by}")
+    print(f"Archive: {archive_path}")
+
+    queries = []
+    print(f"\nEnter paper {by} (empty line to finish):")
+    while True:
+        line = input(f"  [{len(queries) + 1}] ").strip()
+        if not line:
+            break
+        queries.append(line)
+
+    if not queries:
+        print("\nNo papers to search.")
+        return
+
+    sch = _get_client(api_key)
+    archive = _load_archive(archive_path)
+    if not isinstance(archive, dict):
+        archive = {"papers": archive}
+
+    added = 0
+    for i, query in enumerate(queries, 1):
+        print(f"\n[{i}/{len(queries)}] Searching: {query}")
+        record = search_by_title(query, sch) if by == "title" else search_by_doi(query, sch)
+
+        if not record:
+            print("  Not found.")
+            continue
+
+        # Flatten all papers across categories for dedup
+        all_papers = []
+        for cat_papers in archive.values():
+            if isinstance(cat_papers, list):
+                all_papers.extend(cat_papers)
+
+        if _is_duplicate(all_papers, record):
+            print(f"  Already exists: {record['title'][:60]}")
+            continue
+
+        # Add to first category or a default one
+        categories = list(archive.keys())
+        target = categories[0] if categories else "papers"
+        if target not in archive:
+            archive[target] = []
+        archive[target].append(record)
+        added += 1
+        print(f"  Added: {record['title'][:60]}")
+
+    if added:
+        _save_archive(archive_path, archive)
+        print(f"\nAdded {added} paper(s) to {archive_path}")
+    else:
+        print("\nNo new papers were added.")
+
+
+def add_interactive(archive_path: str, categories: list[str] | None = None) -> None:
+    """Interactively add a single record to the archive."""
+    if categories is None:
+        categories = ["ai-agents", "foundation-models", "databases", "benchmarks", "reviews"]
+
+    print("\nSelect category:")
+    for i, cat in enumerate(categories, 1):
+        print(f"  {i}. {cat}")
+
+    while True:
+        choice = input("Enter number or name: ").strip()
+        if choice.isdigit():
+            idx = int(choice) - 1
+            if 0 <= idx < len(categories):
+                category = categories[idx]
+                break
+        elif choice in categories:
+            category = choice
+            break
+        print("Invalid choice.")
+
+    print(f"\nCategory: {category}")
+    print("Enter fields separated by semicolons (;). Use \"\" for empty values.")
+    print("Fields: year; title; team; team website; affiliation; domain; venue; paperUrl; codeUrl; githubStars")
+
+    while True:
+        line = input("Record: ").strip()
+        parts = [p.strip() for p in line.split(";")]
+        if len(parts) < len(FIELDS):
+            parts.extend([""] * (len(FIELDS) - len(parts)))
+        elif len(parts) > len(FIELDS):
+            print(f"Too many fields. Expected {len(FIELDS)}, got {len(parts)}.")
+            continue
+        parts = ["" if p == '""' else p for p in parts]
+        if not parts[0]:
+            print("Year is mandatory.")
+            continue
+        if not parts[1]:
+            print("Title is mandatory.")
+            continue
+
+        # Auto-generate GitHub stars badge
+        code_url = parts[8]
+        if "github.com" in code_url:
+            try:
+                path = code_url.split("github.com/")[1].strip("/")
+                owner_repo = "/".join(path.split("/")[:2])
+                parts[9] = f"https://img.shields.io/github/stars/{owner_repo}"
+            except Exception:
+                pass
+        break
+
+    record = dict(zip(FIELDS, parts))
+
+    archive = _load_archive(archive_path)
+    if not isinstance(archive, dict):
+        archive = {}
+
+    if category not in archive:
+        archive[category] = []
+    archive[category].append(record)
+    archive[category].sort(key=lambda x: x.get("year", "0"), reverse=True)
+
+    _save_archive(archive_path, archive)
+    print(f"\nRecord added to '{category}' in {archive_path}")

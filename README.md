@@ -78,6 +78,8 @@ awescholar crawler run "query"                        # Full pipeline
 awescholar updater update --direction new2old --archive data.json   # Merge to archive
 awescholar updater readme --archive data.json         # Generate README tables
 awescholar updater rss --archive data.json            # Generate RSS feed
+awescholar updater search --archive data.json --by title           # Search by title and add
+awescholar updater add --archive data.json            # Interactively add a record
 ```
 
 ## Development

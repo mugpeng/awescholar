@@ -1,0 +1,22 @@
+{
+    "model": "gpt-4.1-mini",
+    "api_key": "your-llm-api-key",
+    "base_url": null,
+    "ss_api_key": "your-semantic-scholar-api-key",
+    "db_path": "output",
+    "limit_search": 100,
+    "limit_filter": 20,
+    "include_abstracts": true,
+    "fields_of_study": ["Biology", "Medicine", "Bioinformatics"],
+    "publication_date": "2025-01-01:2025-05-30",
+    "categories": [
+        "Foundation Models",
+        "Drug Discovery",
+        "Perturbation Study",
+        "Single Cell Analysis",
+        "AI Agents",
+        "Databases",
+        "Benchmarks",
+        "Reviews"
+    ]
+}

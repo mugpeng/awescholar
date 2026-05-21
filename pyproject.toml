@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "awescholar"
+version = "0.1.0"
+description = "Automated scientific literature discovery and curation for Awesome lists"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "litellm",
+    "semanticscholar",
+    "sqlalchemy",
+    "pydantic>=2.0",
+    "python-dotenv",
+    "rich",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+awescholar = "awescholar.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

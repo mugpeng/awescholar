@@ -1,0 +1,95 @@
+<div align="center">
+  <h1>awescholar</h1>
+  <p><strong>Automated scientific literature discovery and curation.</strong></p>
+  <p>Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.</p>
+  <p>
+    <strong>English</strong>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/version-0.1.0-7C3AED?style=flat-square" alt="Version">
+    <img src="https://img.shields.io/badge/python-%E2%89%A53.10-0EA5E9?style=flat-square" alt="Python">
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/status-alpha-c96a3d?style=flat-square" alt="Status">
+    <img src="https://img.shields.io/badge/platform-cli-334155?style=flat-square" alt="Platform">
+  </p>
+</div>
+
+> Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.
+
+A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained archive. No agent framework — just Python and an LLM API call.
+
+## Install
+
+```bash
+pip install -e .
+```
+
+## Quick Start
+
+```bash
+# Set your LLM provider
+export AWESCHOLAR_MODEL="gpt-4.1-mini"
+export AWESCHOLAR_API_KEY="sk-..."
+
+# Run the full pipeline
+awescholar run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+
+# Or use a config file
+awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05-30
+```
+
+## Config
+
+```json
+{
+    "model": "gpt-4.1-mini",
+    "api_key": "sk-...",
+    "ss_api_key": "",
+    "db_path": "output",
+    "limit_search": 100,
+    "limit_filter": 20,
+    "categories": ["Foundation Models", "Drug Discovery", "Perturbation Study"],
+    "fields_of_study": ["Biology", "Medicine"],
+    "publication_date": "2025-01-01:2025-05-30"
+}
+```
+
+Supported LLM providers (via LiteLLM): OpenAI, DeepSeek, Gemini, Mistral, custom endpoints.
+
+## Commands
+
+```bash
+awescholar -v                              # Show version
+awescholar search "query"                  # Search Semantic Scholar
+awescholar annotate                        # Annotate papers in DB
+awescholar filter --limit 20               # Select top papers
+awescholar report -o report.md             # Generate Markdown report
+awescholar run "query"                     # Full pipeline
+awescholar update --direction new2old --archive data.json   # Merge to archive
+awescholar readme --archive data.json      # Generate README tables
+awescholar rss --archive data.json         # Generate RSS feed
+```
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+## Workflow
+
+```
+Search (Semantic Scholar) -> Annotate (LLM) -> Filter (LLM) -> Report (LLM)
+                                                              |
+                                                              v
+                                                    updater_filter.json
+                                                              |
+                                                    update new2old
+                                                              |
+                                                              v
+                                                    archive.json -> README / RSS
+```
+
+Each step produces a JSON intermediate file. You can re-run any step independently.

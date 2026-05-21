@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>awescholar</h1>
+  <h1>awescholar: Scientific Literature Curator</h1>
   <p><strong>自动化科学文献发现与策展。</strong></p>
   <p>搜索、标注、筛选和报告学术论文 — 并将结果合并到你的 Awesome 列表中。</p>
   <p>

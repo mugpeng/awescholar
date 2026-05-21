@@ -43,9 +43,10 @@ awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05
 
 ```json
 {
-    "model": "gpt-4.1-mini",
-    "api_key": "sk-...",
-    "ss_api_key": "",
+    "model": "${AWESCHOLAR_MODEL}",
+    "api_key": "${AWESCHOLAR_API_KEY}",
+    "base_url": "${AWESCHOLAR_BASE_URL}",
+    "ss_api_key": "${SEMANTICSCHOLAR_API_KEY}",
     "db_path": "output",
     "limit_search": 100,
     "limit_filter": 20,
@@ -54,6 +55,8 @@ awescholar --config config.json run "foundation model" --date 2025-01-01:2025-05
     "publication_date": "2025-01-01:2025-05-30"
 }
 ```
+
+`${VAR}` patterns are expanded from environment variables at load time. Copy `config.example.json` and fill in your values — or set env vars directly and skip the config file.
 
 Supported LLM providers (via LiteLLM): OpenAI, DeepSeek, Gemini, Mistral, custom endpoints.
 

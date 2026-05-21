@@ -12,4 +12,4 @@ Initial release. Simplified rewrite of AweAgent without agent framework dependen
 - Incremental merge for maintaining curated Awesome lists
 - README table generation and RSS feed from archive JSON
 - Multi-provider LLM support via LiteLLM (OpenAI, DeepSeek, Gemini, Mistral)
-- Config via JSON file or environment variables
+- Config via JSON file with `${ENV_VAR}` expansion or direct environment variables

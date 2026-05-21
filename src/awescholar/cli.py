@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 from importlib.metadata import version, PackageNotFoundError
 
@@ -19,13 +20,26 @@ def get_version() -> str:
         return "0.1.0"
 
 
+def _expand_env_vars(value):
+    """Replace ${VAR} patterns with environment variable values."""
+    if isinstance(value, str):
+        def _replace(m):
+            return os.environ.get(m.group(1), "")
+        return re.sub(r"\$\{(\w+)\}", _replace, value) or None
+    if isinstance(value, list):
+        return [_expand_env_vars(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _expand_env_vars(v) for k, v in value.items()}
+    return value
+
+
 def load_config(path: str | None) -> dict:
-    """Load config from JSON file, falling back to env vars."""
+    """Load config from JSON file, expanding ${ENV_VAR} patterns."""
     load_dotenv()
     config = {}
     if path and os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
-            config = json.load(f)
+            config = _expand_env_vars(json.load(f))
 
     return {
         "model": config.get("model") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),

@@ -129,14 +129,22 @@ def run_filter(
     if isinstance(result, str):
         raise RuntimeError(f"Filter LLM returned invalid response. Raw: {result[:200]}")
 
+    # Collect DOIs in LLM's ranked order, then hard-truncate to limit
+    ordered_dois: list[str] = []
     reasons: dict[str, str] = {}
     for cat_papers in result.papers.values():
         for p in cat_papers:
+            if p.doi not in reasons:
+                ordered_dois.append(p.doi)
             reasons[p.doi] = p.reason
 
+    if len(ordered_dois) > limit:
+        ordered_dois = ordered_dois[:limit]
+
+    kept_set = set(ordered_dois)
     filtered: dict[str, list[dict]] = {}
     for cat, papers in structured_data.items():
-        kept = [{**p, "reason_for_inclusion": reasons[p["doi"]]} for p in papers if p["doi"] in reasons]
+        kept = [{**p, "reason_for_inclusion": reasons[p["doi"]]} for p in papers if p["doi"] in kept_set]
         if kept:
             filtered[cat] = kept
 

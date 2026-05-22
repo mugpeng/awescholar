@@ -35,26 +35,88 @@ def _expand_env_vars(value):
 
 
 def load_config(path: str | None) -> dict:
-    """Load config from JSON file, expanding ${ENV_VAR} patterns."""
+    """Load config from JSON file, expanding ${ENV_VAR} patterns.
+
+    Supports both grouped (new) and flat (legacy) config formats.
+    Returns a flat dict for compatibility with pipeline code.
+    """
     load_dotenv()
-    config = {}
+    raw = {}
     if path and os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
-            config = _expand_env_vars(json.load(f))
+            raw = _expand_env_vars(json.load(f))
 
+    # Detect format: if top-level "model" is a dict → grouped; otherwise legacy flat
+    is_grouped = isinstance(raw.get("model"), dict)
+
+    if is_grouped:
+        model = raw.get("model", {})
+        ss = raw.get("semantic_scholar", {})
+        search = raw.get("search", {})
+        filt = raw.get("filter", {})
+        output = raw.get("output", {})
+        pipe = raw.get("pipeline", {})
+        return {
+            "model": model.get("name") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
+            "api_key": model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
+            "base_url": model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
+            "agent_models": raw.get("agent_models"),
+            "ss_api_key": ss.get("api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
+            "search_query": search.get("query"),
+            "fields_of_study": search.get("fields_of_study"),
+            "publication_date": search.get("publication_date"),
+            "limit_search": search.get("limit", 100),
+            "include_abstracts": search.get("include_abstracts", True),
+            "limit_filter": filt.get("limit", 20),
+            "db_path": output.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
+            "report_filename": output.get("report_filename"),
+            "skip_search": pipe.get("skip_search", False),
+            "use_updater_json": pipe.get("use_updater_json", False),
+            "use_filtered_json": pipe.get("use_filtered_json", False),
+            "existing_json_path": pipe.get("existing_json_path"),
+            "merge_new_to_old": pipe.get("merge_new_to_old", False),
+            "categories": raw.get("categories"),
+        }
+
+    # Legacy flat format
     return {
-        "model": config.get("model") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
-        "api_key": config.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
-        "base_url": config.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
-        "ss_api_key": config.get("ss_api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
-        "db_path": config.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
-        "limit_search": config.get("limit_search", 100),
-        "limit_filter": config.get("limit_filter", 20),
-        "categories": config.get("categories"),
-        "fields_of_study": config.get("fields_of_study"),
-        "publication_date": config.get("publication_date"),
-        "include_abstracts": config.get("include_abstracts", True),
+        "model": raw.get("model") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
+        "api_key": raw.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
+        "base_url": raw.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
+        "agent_models": None,
+        "ss_api_key": raw.get("ss_api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
+        "search_query": None,
+        "fields_of_study": raw.get("fields_of_study"),
+        "publication_date": raw.get("publication_date"),
+        "limit_search": raw.get("limit_search", 100),
+        "include_abstracts": raw.get("include_abstracts", True),
+        "limit_filter": raw.get("limit_filter", 20),
+        "db_path": raw.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
+        "report_filename": None,
+        "skip_search": False,
+        "use_updater_json": False,
+        "use_filtered_json": False,
+        "existing_json_path": None,
+        "merge_new_to_old": False,
+        "categories": raw.get("categories"),
     }
+
+
+def get_agent_config(config: dict, agent_name: str) -> tuple[str, str | None, str | None]:
+    """Resolve (model, api_key, base_url) for a specific agent.
+
+    Falls back to global model config if no agent-specific override.
+    """
+    agent_models = config.get("agent_models")
+    if agent_models and isinstance(agent_models, dict):
+        am = agent_models.get(agent_name)
+        if am and isinstance(am, dict):
+            return (
+                am.get("name") or config["model"],
+                am.get("api_key") or config["api_key"],
+                am.get("base_url") or config["base_url"],
+            )
+    return config["model"], config["api_key"], config["base_url"]
 
 
 def status(msg: str) -> None:
@@ -92,10 +154,11 @@ def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
         for p in db_papers
     ]
 
+    model, api_key, base_url = get_agent_config(config, "annotator")
     structured = run_annotate(
-        papers=papers, model=config["model"], categories=config["categories"],
+        papers=papers, model=model, categories=config["categories"],
         include_abstracts=config["include_abstracts"],
-        api_key=config["api_key"], base_url=config["base_url"], status_cb=status,
+        api_key=api_key, base_url=base_url, status_cb=status,
     )
 
     out_path = os.path.join(config["db_path"], "updater.json")
@@ -114,10 +177,11 @@ def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
     with open(updater_path, "r", encoding="utf-8") as f:
         structured = json.load(f)
 
+    model, api_key, base_url = get_agent_config(config, "filterer")
     filtered = run_filter(
-        structured_data=structured, model=config["model"],
+        structured_data=structured, model=model,
         limit=args.limit or config["limit_filter"],
-        api_key=config["api_key"], base_url=config["base_url"], status_cb=status,
+        api_key=api_key, base_url=base_url, status_cb=status,
     )
 
     out_path = os.path.join(config["db_path"], "updater_filter.json")
@@ -135,10 +199,11 @@ def cmd_report(args: argparse.Namespace, config: dict) -> int | None:
     with open(filtered_path, "r", encoding="utf-8") as f:
         filtered = json.load(f)
 
+    model, api_key, base_url = get_agent_config(config, "reporter")
     report = run_report(
-        filtered_data=filtered, model=config["model"],
+        filtered_data=filtered, model=model,
         date_range=config.get("publication_date") or "N/A",
-        api_key=config["api_key"], base_url=config["base_url"], status_cb=status,
+        api_key=api_key, base_url=base_url, status_cb=status,
     )
 
     if args.output:
@@ -151,17 +216,33 @@ def cmd_report(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
+    query = args.query or config.get("search_query")
+    if not query and not config.get("skip_search"):
+        print("Error: query is required (via CLI arg or config search.query)")
+        return 1
+
     filtered, report = run_pipeline(
-        query=args.query, model=config["model"], db_path=config["db_path"],
+        query=query, model=config["model"], db_path=config["db_path"],
         api_key=config["api_key"], ss_api_key=config["ss_api_key"], base_url=config["base_url"],
+        agent_models=config.get("agent_models"),
         limit_search=args.limit_search or config["limit_search"],
         limit_filter=args.limit_filter or config["limit_filter"],
         categories=config["categories"], include_abstracts=config["include_abstracts"],
         fields_of_study=config["fields_of_study"],
-        publication_date_or_year=args.date or config["publication_date"], status_cb=status,
+        publication_date_or_year=args.date or config["publication_date"],
+        skip_search=config["skip_search"],
+        use_updater_json=config["use_updater_json"],
+        use_filtered_json=config["use_filtered_json"],
+        existing_json_path=config["existing_json_path"],
+        merge_new_to_old=config["merge_new_to_old"],
+        status_cb=status,
     )
 
-    output = args.output or os.path.join(config["db_path"], "report.md")
+    output = args.output or config.get("report_filename")
+    if not output:
+        _, reporter_model, _ = get_agent_config(config, "reporter")
+        model_suffix = reporter_model.split("/")[-1]
+        output = os.path.join(config["db_path"], f"research_report_{model_suffix}.md")
     os.makedirs(os.path.dirname(output) or ".", exist_ok=True)
     with open(output, "w", encoding="utf-8") as f:
         f.write(report)
@@ -235,7 +316,7 @@ def main() -> int:
     p.add_argument("-o", "--output", type=str, help="Output file path")
 
     p = crawler_sub.add_parser("run", help="Run full pipeline: search, annotate, filter, report")
-    p.add_argument("query", type=str, help="Search query string")
+    p.add_argument("query", type=str, nargs="?", help="Search query string (or set in config)")
     p.add_argument("--limit-search", type=int, help="Max search results (default: 100)")
     p.add_argument("--limit-filter", type=int, help="Papers to keep after filter (default: 20)")
     p.add_argument("--date", type=str, help="Date range, e.g. 2025-01-01:2025-05-30")

@@ -148,57 +148,141 @@ def run_report(
     return result
 
 
+def _resolve_agent(agent_models: dict | None, agent_name: str,
+                   fallback_model: str, fallback_key: str | None, fallback_url: str | None,
+                   ) -> tuple[str, str | None, str | None]:
+    """Resolve (model, api_key, base_url) for an agent from agent_models."""
+    if agent_models and isinstance(agent_models, dict):
+        am = agent_models.get(agent_name)
+        if am and isinstance(am, dict):
+            return (
+                am.get("name") or fallback_model,
+                am.get("api_key") or fallback_key,
+                am.get("base_url") or fallback_url,
+            )
+    return fallback_model, fallback_key, fallback_url
+
+
 def run_pipeline(
-    query: str,
+    query: str | None,
     model: str,
     db_path: str = "output",
     api_key: str | None = None,
     ss_api_key: str | None = None,
     base_url: str | None = None,
+    agent_models: dict | None = None,
     limit_search: int = 100,
     limit_filter: int = 20,
     categories: list[str] | None = None,
     include_abstracts: bool = True,
     fields_of_study: list[str] | None = None,
     publication_date_or_year: str | None = None,
+    skip_search: bool = False,
+    use_updater_json: bool = False,
+    use_filtered_json: bool = False,
+    existing_json_path: str | None = None,
+    merge_new_to_old: bool = False,
     status_cb: StatusCallback = None,
 ) -> tuple[dict, str]:
-    """Run full pipeline. Returns (filtered_data, report_markdown)."""
+    """Run full pipeline with optional skip/resume controls.
+
+    Returns (filtered_data, report_markdown).
+    """
+    from .db import Paper, get_session
+
     cb = status_cb or _noop
-
-    papers = run_search(
-        query=query, db_path=db_path, api_key=ss_api_key, limit=limit_search,
-        fields_of_study=fields_of_study, publication_date_or_year=publication_date_or_year,
-        status_cb=cb,
-    )
-    if not papers:
-        raise RuntimeError("No papers found for the given query. Try broadening your search terms.")
-
-    structured = run_annotate(
-        papers=papers, model=model, categories=categories,
-        include_abstracts=include_abstracts, api_key=api_key, base_url=base_url, status_cb=cb,
-    )
-
-    updater_path = os.path.join(db_path, "updater.json")
     os.makedirs(db_path, exist_ok=True)
+
+    updater_path = existing_json_path or os.path.join(db_path, "updater.json")
+    filtered_path = os.path.join(db_path, "updater_filter.json")
+
+    # --- Fast path: reuse filtered results ---
+    if use_filtered_json:
+        cb("Skipping search + annotate + filter (use_filtered_json=true)")
+        if not os.path.exists(filtered_path):
+            raise FileNotFoundError(f"Not found: {filtered_path}")
+        with open(filtered_path, "r", encoding="utf-8") as f:
+            filtered = json.load(f)
+        m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url)
+        report = run_report(
+            filtered_data=filtered, model=m,
+            date_range=publication_date_or_year or "N/A",
+            api_key=k, base_url=u, status_cb=cb,
+        )
+        return filtered, report
+
+    # --- Skip annotate: reuse updater.json ---
+    if use_updater_json:
+        cb("Skipping search + annotate (use_updater_json=true)")
+        if not os.path.exists(updater_path):
+            raise FileNotFoundError(f"Not found: {updater_path}")
+        with open(updater_path, "r", encoding="utf-8") as f:
+            structured = json.load(f)
+        m, k, u = _resolve_agent(agent_models, "filterer", model, api_key, base_url)
+        filtered = run_filter(
+            structured_data=structured, model=m, limit=limit_filter,
+            api_key=k, base_url=u, status_cb=cb,
+        )
+        with open(filtered_path, "w", encoding="utf-8") as f:
+            json.dump(filtered, f, indent=2, ensure_ascii=False)
+        cb(f"Saved filtered data to {filtered_path}")
+        m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url)
+        report = run_report(
+            filtered_data=filtered, model=m,
+            date_range=publication_date_or_year or "N/A",
+            api_key=k, base_url=u, status_cb=cb,
+        )
+        return filtered, report
+
+    # --- Search phase ---
+    if skip_search:
+        cb("Skipping search (skip_search=true), loading from DB")
+        session = get_session(db_path)
+        db_papers = session.query(Paper).all()
+        session.close()
+        if not db_papers:
+            raise RuntimeError("No papers in database. Run search first.")
+        papers = [
+            {"doi": p.doi, "title": p.title, "abstract": p.abstract, "venue": p.venue}
+            for p in db_papers
+        ]
+    else:
+        if not query:
+            raise RuntimeError("query is required when skip_search is false")
+        papers = run_search(
+            query=query, db_path=db_path, api_key=ss_api_key, limit=limit_search,
+            fields_of_study=fields_of_study, publication_date_or_year=publication_date_or_year,
+            status_cb=cb,
+        )
+        if not papers:
+            raise RuntimeError("No papers found for the given query. Try broadening your search terms.")
+
+    # --- Annotate phase ---
+    m, k, u = _resolve_agent(agent_models, "annotator", model, api_key, base_url)
+    structured = run_annotate(
+        papers=papers, model=m, categories=categories,
+        include_abstracts=include_abstracts, api_key=k, base_url=u, status_cb=cb,
+    )
     with open(updater_path, "w", encoding="utf-8") as f:
         json.dump(structured, f, indent=2, ensure_ascii=False)
     cb(f"Saved annotated data to {updater_path}")
 
+    # --- Filter phase ---
+    m, k, u = _resolve_agent(agent_models, "filterer", model, api_key, base_url)
     filtered = run_filter(
-        structured_data=structured, model=model, limit=limit_filter,
-        api_key=api_key, base_url=base_url, status_cb=cb,
+        structured_data=structured, model=m, limit=limit_filter,
+        api_key=k, base_url=u, status_cb=cb,
     )
-
-    filtered_path = os.path.join(db_path, "updater_filter.json")
     with open(filtered_path, "w", encoding="utf-8") as f:
         json.dump(filtered, f, indent=2, ensure_ascii=False)
     cb(f"Saved filtered data to {filtered_path}")
 
+    # --- Report phase ---
+    m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url)
     report = run_report(
-        filtered_data=filtered, model=model,
+        filtered_data=filtered, model=m,
         date_range=publication_date_or_year or "N/A",
-        api_key=api_key, base_url=base_url, status_cb=cb,
+        api_key=k, base_url=u, status_cb=cb,
     )
 
     return filtered, report

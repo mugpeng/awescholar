@@ -21,7 +21,8 @@ def search_papers(
         fields = [
             "paperId", "externalIds", "url", "title", "abstract", "venue",
             "publicationVenue", "publicationTypes", "publicationDate", "journal",
-            "authors", "citationCount", "fieldsOfStudy", "isOpenAccess", "openAccessPdf",
+            "authors", "citationCount", "influentialCitationCount",
+            "fieldsOfStudy", "isOpenAccess", "openAccessPdf", "tldr",
         ]
 
     sch = SemanticScholar(api_key=api_key) if api_key else SemanticScholar()

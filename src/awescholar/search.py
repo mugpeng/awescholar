@@ -15,6 +15,14 @@ def search_papers(
 ) -> list[dict]:
     """Search Semantic Scholar and persist results to SQLite.
 
+    Args:
+        fields_of_study: Filter by field. Valid values (case-sensitive):
+            Computer Science, Medicine, Chemistry, Biology, Materials Science,
+            Physics, Geology, Psychology, Art, History, Geography, Sociology,
+            Business, Political Science, Economics, Philosophy, Mathematics,
+            Engineering, Environmental Science, Agricultural and Food Sciences,
+            Education, Linguistics, Law.
+
     Returns list of paper dicts with doi, title, journal, etc.
     """
     if fields is None:

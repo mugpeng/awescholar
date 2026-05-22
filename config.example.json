@@ -10,7 +10,7 @@
     },
     "search": {
         "query": "AI agent|large language model|foundation model",
-        "fields_of_study": ["Biology", "Medicine", "Bioinformatics"],
+        "fields_of_study": ["Biology", "Medicine", "Computer Science"],
         "publication_date": "2025-01-01:2025-05-30",
         "limit": 100,
         "include_abstracts": true

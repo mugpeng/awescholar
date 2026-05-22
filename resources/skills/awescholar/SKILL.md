@@ -10,11 +10,11 @@ Automated scientific literature discovery and curation CLI.
 ## Commands
 
 ```
-awescholar crawler run [query]  --config PATH  # full pipeline
-awescholar crawler search <query> [--limit N] [--date RANGE]
-awescholar crawler annotate
-awescholar crawler filter [--limit N]
-awescholar crawler report [-o PATH]
+awescholar --config PATH crawler run [query]         # full pipeline
+awescholar --config PATH crawler search <query>      # search only
+awescholar --config PATH crawler annotate [--input]  # annotate papers
+awescholar --config PATH crawler filter [--input]    # filter papers
+awescholar --config PATH crawler report [input] [-o] # generate report
 
 awescholar updater update --direction new2old|old2new --archive PATH
 awescholar updater readme --archive PATH
@@ -22,6 +22,32 @@ awescholar updater rss --archive PATH
 awescholar updater search --archive PATH [--by title|doi]
 awescholar updater add --archive PATH
 ```
+
+### Step-by-step usage (no need to re-run full pipeline)
+
+Each subcommand accepts `--input` (or positional `input` for report) to read from a specific file instead of the default path. This lets you re-run any step independently:
+
+```bash
+# 1. Search → papers.db
+awescholar --config cfg.json crawler search "AI agent" --limit 50
+
+# 2. Annotate → updater.json (reads from DB by default, or --input papers.json)
+awescholar --config cfg.json crawler annotate
+awescholar --config cfg.json crawler annotate --input papers.json
+
+# 3. Filter → updater_filter.json (reads from updater.json by default, or --input)
+awescholar --config cfg.json crawler filter --limit 20
+awescholar --config cfg.json crawler filter --input my_updater.json
+
+# 4. Report → markdown (reads from updater_filter.json by default, or positional input)
+awescholar --config cfg.json crawler report
+awescholar --config cfg.json crawler report test/updater_filter.json -o report.md
+```
+
+Typical re-run scenarios:
+- **Re-generate report only** (no re-search/re-annotate): `awescholar --config cfg.json crawler report updater_filter.json -o report.md`
+- **Re-filter with different limit**: `awescholar --config cfg.json crawler filter --input updater.json --limit 10`
+- **Re-annotate from JSON** (skip DB): `awescholar --config cfg.json crawler annotate --input papers.json`
 
 ## Config (grouped format)
 

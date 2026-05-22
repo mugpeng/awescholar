@@ -56,6 +56,13 @@ def search_papers(
 
     paper_items = results.items if hasattr(results, "items") else results
 
+    # Post-validate fields_of_study (SS API filter is not strict)
+    if fields_of_study:
+        paper_items = [
+            p for p in paper_items
+            if p.fieldsOfStudy and any(f in p.fieldsOfStudy for f in fields_of_study)
+        ]
+
     # Fetch affiliations for last authors
     author_ids = []
     for p in paper_items:

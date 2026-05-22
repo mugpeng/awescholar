@@ -36,3 +36,10 @@ def get_session(db_path: str = "output") -> Session:
     engine = create_engine(f"sqlite:///{db_file}")
     Base.metadata.create_all(engine)
     return sessionmaker(bind=engine)()
+
+
+def clear_db(db_path: str = "output") -> None:
+    """Delete the papers database file."""
+    db_file = os.path.join(db_path, "papers.db")
+    if os.path.exists(db_file):
+        os.remove(db_file)

@@ -2,12 +2,20 @@
 
 import json
 import os
+from datetime import date, datetime
 from typing import Callable
 
 from . import prompts
 from .llm import complete
 from .schemas import AnnotationResult, FilterResult
 from .search import search_papers
+
+
+class _DateEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, (date, datetime)):
+            return o.isoformat()
+        return super().default(o)
 
 StatusCallback = Callable[[str], None] | None
 
@@ -110,7 +118,7 @@ def run_filter(
 
     result = complete(
         model=model, system=prompts.FILTER,
-        user=json.dumps({"papers": minimal, "limit_filter": limit}, indent=2),
+        user=json.dumps({"papers": minimal, "limit_filter": limit}, indent=2, cls=_DateEncoder),
         response_format=FilterResult, api_key=api_key, base_url=base_url,
     )
     if isinstance(result, str):
@@ -145,7 +153,7 @@ def run_report(
 
     result = complete(
         model=model, system=prompts.REPORTER.replace("{date_range}", date_range),
-        user=json.dumps(filtered_data, indent=2, ensure_ascii=False),
+        user=json.dumps(filtered_data, indent=2, ensure_ascii=False, cls=_DateEncoder),
         api_key=api_key, base_url=base_url,
     )
     cb("Report generated.")
@@ -228,7 +236,7 @@ def run_pipeline(
             api_key=k, base_url=u, status_cb=cb,
         )
         with open(filtered_path, "w", encoding="utf-8") as f:
-            json.dump(filtered, f, indent=2, ensure_ascii=False)
+            json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
         cb(f"Saved filtered data to {filtered_path}")
         m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url)
         report = run_report(
@@ -253,6 +261,9 @@ def run_pipeline(
     else:
         if not query:
             raise RuntimeError("query is required when skip_search is false")
+        from .db import clear_db
+        clear_db(db_path)
+        cb("Cleared previous database for fresh search.")
         papers = run_search(
             query=query, db_path=db_path, api_key=ss_api_key, limit=limit_search,
             fields_of_study=fields_of_study, publication_date_or_year=publication_date_or_year,
@@ -268,7 +279,7 @@ def run_pipeline(
         include_abstracts=include_abstracts, api_key=k, base_url=u, status_cb=cb,
     )
     with open(updater_path, "w", encoding="utf-8") as f:
-        json.dump(structured, f, indent=2, ensure_ascii=False)
+        json.dump(structured, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
     cb(f"Saved annotated data to {updater_path}")
 
     # --- Filter phase ---
@@ -278,7 +289,7 @@ def run_pipeline(
         api_key=k, base_url=u, status_cb=cb,
     )
     with open(filtered_path, "w", encoding="utf-8") as f:
-        json.dump(filtered, f, indent=2, ensure_ascii=False)
+        json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
     cb(f"Saved filtered data to {filtered_path}")
 
     # --- Report phase ---

@@ -5,11 +5,19 @@ import json
 import os
 import re
 import sys
+from datetime import date, datetime
 from importlib.metadata import version, PackageNotFoundError
 
 from dotenv import load_dotenv
 
 from .pipeline import run_search, run_annotate, run_filter, run_report, run_pipeline
+
+
+class _DateEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, (date, datetime)):
+            return o.isoformat()
+        return super().default(o)
 from .utils import merge_new_to_archive, merge_archive_to_new, update_readme, generate_rss
 from .record import search_and_add, add_interactive
 
@@ -115,20 +123,24 @@ def cmd_search(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
-    from .db import Paper, get_session
-
-    session = get_session(config["db_path"])
-    db_papers = session.query(Paper).all()
-    session.close()
-
-    if not db_papers:
-        print("No papers in database. Run 'awescholar crawler search <query>' first.")
-        return 1
-
-    papers = [
-        {"doi": p.doi, "title": p.title, "abstract": p.abstract, "venue": p.venue}
-        for p in db_papers
-    ]
+    if args.input:
+        if not os.path.exists(args.input):
+            print(f"Not found: {args.input}")
+            return 1
+        with open(args.input, "r", encoding="utf-8") as f:
+            papers = json.load(f)
+    else:
+        from .db import Paper, get_session
+        session = get_session(config["db_path"])
+        db_papers = session.query(Paper).all()
+        session.close()
+        if not db_papers:
+            print("No papers in database. Run 'awescholar crawler search <query>' first.")
+            return 1
+        papers = [
+            {"doi": p.doi, "title": p.title, "abstract": p.abstract, "venue": p.venue}
+            for p in db_papers
+        ]
 
     model, api_key, base_url = get_agent_config(config, "annotator")
     structured = run_annotate(
@@ -140,12 +152,12 @@ def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
     out_path = os.path.join(config["db_path"], "updater.json")
     os.makedirs(config["db_path"], exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(structured, f, indent=2, ensure_ascii=False)
+        json.dump(structured, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
     print(f"\nSaved annotated data to {out_path}")
 
 
 def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
-    updater_path = os.path.join(config["db_path"], "updater.json")
+    updater_path = args.input or os.path.join(config["db_path"], "updater.json")
     if not os.path.exists(updater_path):
         print(f"Not found: {updater_path}. Run 'awescholar crawler annotate' first.")
         return 1
@@ -162,12 +174,12 @@ def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
 
     out_path = os.path.join(config["db_path"], "updater_filter.json")
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(filtered, f, indent=2, ensure_ascii=False)
+        json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
     print(f"\nSaved filtered data to {out_path}")
 
 
 def cmd_report(args: argparse.Namespace, config: dict) -> int | None:
-    filtered_path = os.path.join(config["db_path"], "updater_filter.json")
+    filtered_path = args.input or os.path.join(config["db_path"], "updater_filter.json")
     if not os.path.exists(filtered_path):
         print(f"Not found: {filtered_path}. Run 'awescholar crawler filter' first.")
         return 1
@@ -283,12 +295,15 @@ def main() -> int:
     p.add_argument("--limit", type=int, help="Max results (default: 100)")
     p.add_argument("--date", type=str, help="Date range, e.g. 2025-01-01:2025-05-30")
 
-    crawler_sub.add_parser("annotate", help="Annotate papers with domain and category")
+    p = crawler_sub.add_parser("annotate", help="Annotate papers with domain and category")
+    p.add_argument("--input", type=str, help="Path to papers JSON (default: read from DB)")
 
     p = crawler_sub.add_parser("filter", help="Select top papers by quality and relevance")
+    p.add_argument("--input", type=str, help="Path to annotated JSON (default: {db_path}/updater.json)")
     p.add_argument("--limit", type=int, help="Number of papers to keep (default: 20)")
 
     p = crawler_sub.add_parser("report", help="Generate Markdown report from filtered data")
+    p.add_argument("input", type=str, nargs="?", help="Path to filtered JSON (default: {db_path}/updater_filter.json)")
     p.add_argument("-o", "--output", type=str, help="Output file path")
 
     p = crawler_sub.add_parser("run", help="Run full pipeline: search, annotate, filter, report")

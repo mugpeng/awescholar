@@ -2,13 +2,18 @@
 
 ## v0.1.1
 
-CLI restructure and new single-record commands.
+CLI restructure, grouped config format, and new single-record commands.
 
 ### Highlights
 
 - Group CLI commands into `crawler` (search, annotate, filter, report, run) and `updater` (update, readme, rss, search, add)
+- Grouped config format: `model`, `search`, `filter`, `output`, `pipeline`, `agent_models`
+- `agent_models` — override LLM model per agent (annotator, filterer, reporter)
+- Pipeline flow control: `skip_search`, `use_updater_json`, `use_filtered_json`
+- `search.query` in config allows `crawler run` without CLI query argument
 - `awescholar updater search` — search Semantic Scholar by title/DOI and add to archive
 - `awescholar updater add` — interactively add a single record to archive
+- Document `fields_of_study` valid values (23 fields) in search module
 - Add Chinese README (README_cn.md), CONTRIBUTING.md, CI/CD workflows
 - Add "Scientific Literature Curator" subtitle to README
 

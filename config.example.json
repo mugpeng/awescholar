@@ -11,11 +11,15 @@
         "mimo": {
             "api_key": "${XIAOMI_API_KEY}",
             "base_url": "your-openai-compatible-endpoint"
+        },
+        "openai": {
+            "api_key": "${OPENAI_API_KEY}",
+            "base_url": "your-openai-compatible-endpoint"
         }
     },
     "model": {
-        "profile": "glm",
-        "name": "glm-5.1"
+        "profile": "openai",
+        "name": "gpt-5.4-mini"
     },
     "agent_models": null,
     "semantic_scholar": {

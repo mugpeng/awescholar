@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.2
+
+Model profiles, research interests filter, and PyPI publish fix.
+
+### Highlights
+
+- `model_profiles` — named LLM provider presets (api_key + base_url) referenced by `profile` field in `model` and `agent_models`, so switching providers only requires changing one field
+- `research_interests` in `filter` config — user-defined interests passed to the filterer for priority-based selection
+- `--input` flags on `annotate`, `filter`, `report` subcommands for step reuse without re-running earlier stages
+- Reporter prompt: enforce consecutive global index, every paper must appear in report
+- Filter prompt: quality-first priority, then relevance to research interests
+- PyPI publish switched from OIDC (`pypa/gh-action-pypi-publish`) to `twine upload` with API token
+- `config.example.json` updated with `model_profiles` usage
+
 ## v0.1.1
 
 CLI restructure, grouped config format, and new single-record commands.

@@ -20,10 +20,10 @@ FILTER = """\
 You are a Research Curator. Select exactly `limit_filter` papers by ranking:
 
 **Ranking Priorities:**
-1. **Top Priority — Direct Relevance**: Papers matching user's research interests (listed below).
-   - Reason: "High relevance: Directly matches user's research interests."
-2. **Second Priority — Quality**: Papers from premier venues (Nature, Science, PNAS, NeurIPS, ICML, etc.) or Q1 journals, or affiliated with world-renowned institutions (Stanford, MIT, DeepMind, etc.).
+1. **Top Priority — Quality**: Papers from premier venues (Nature, Science, PNAS, NeurIPS, ICML, etc.) or Q1 journals, or affiliated with world-renowned institutions (Stanford, MIT, DeepMind, etc.).
    - Reason: State the specific criterion (e.g., "High quality: Published in Nature.")
+2. **Second Priority — Direct Relevance**: Papers matching user's research interests (listed below).
+   - Reason: "High relevance: Directly matches user's research interests."
 3. **Third Priority — Best of the Rest**: Included only to meet the target count.
    - Reason: "Included to meet target filter limit."
 
@@ -53,11 +53,15 @@ Structure:
    - `## Category Name`
    - Category summary (200+ words) with technical details, comparative analysis (e.g., "While [1] focuses on..., [3] improves on this by..."), paper references
    - Paper table with columns: Index, Title, Domain, Venue, Team, DOI, affiliation, paperUrl
-   - Index must be globally consecutive starting from 1 across all categories (1, 2, 3, 4, 5...)
    - Format paperUrl as clickable links: `[Link](paperUrl)`
+
+CRITICAL REQUIREMENTS:
+- **EVERY paper** in the input JSON must appear in the report. Do NOT omit, skip, or drop any paper. Count the input papers and verify your output contains the same number.
+- Assign **strictly consecutive global index numbers starting from 1** based on the **order of papers in the JSON input**. Do not skip any numbers (1, 2, 3, 4, 5, ...).
+- Each paper receives **exactly one unique** global index number. Ignore any category-specific numbering in the input.
+- Reference papers in the summary and category text using these index numbers (e.g., [1], [3]).
 
 Rules:
 - Use only information from the provided JSON
 - Raw markdown output, no code block wrappers
-- Strictly consecutive global index numbers — ignore any category-specific numbering in the input
 - Include technical methodologies, evaluation metrics, limitations"""

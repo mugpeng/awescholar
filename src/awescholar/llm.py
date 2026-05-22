@@ -1,7 +1,44 @@
 """LiteLLM wrapper for multi-provider LLM calls with structured output."""
 
+import json
+import re
+
 import litellm
 from pydantic import BaseModel
+
+
+def _extract_json(text: str) -> str:
+    """Extract JSON from LLM response, handling markdown fences and preamble."""
+    # Try direct parse first
+    text = text.strip()
+    try:
+        json.loads(text)
+        return text
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # Strip ```json ... ``` fences
+    fence = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+    if fence:
+        candidate = fence.group(1).strip()
+        try:
+            json.loads(candidate)
+            return candidate
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    # Find first { ... } or [ ... ] block
+    for pattern in [r"\{.*\}", r"\[.*\]"]:
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            candidate = match.group(0)
+            try:
+                json.loads(candidate)
+                return candidate
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+    return text
 
 
 def complete(
@@ -14,6 +51,10 @@ def complete(
     temperature: float = 0.0,
 ) -> BaseModel | str:
     """Call LLM with optional structured output.
+
+    Uses {"type": "json_object"} for broad provider compatibility instead of
+    native structured outputs (which many providers don't support).
+    Extracts and validates JSON from the response post-hoc.
 
     If response_format is provided, returns validated Pydantic model.
     Otherwise returns raw string content.
@@ -31,11 +72,12 @@ def complete(
     if base_url:
         kwargs["api_base"] = base_url
     if response_format:
-        kwargs["response_format"] = response_format
+        kwargs["response_format"] = {"type": "json_object"}
 
     response = litellm.completion(**kwargs)
     content = response.choices[0].message.content
 
     if response_format:
-        return response_format.model_validate_json(content)
+        cleaned = _extract_json(content)
+        return response_format.model_validate_json(cleaned)
     return content

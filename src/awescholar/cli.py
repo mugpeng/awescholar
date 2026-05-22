@@ -49,7 +49,7 @@ def load_config(path: str | None) -> dict:
     output = raw.get("output", {})
     pipe = raw.get("pipeline", {})
     return {
-        "model": model.get("name") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
+        "model": _prefix_model(model.get("name")) or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
         "api_key": model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
         "base_url": model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
         "agent_models": raw.get("agent_models"),
@@ -71,6 +71,13 @@ def load_config(path: str | None) -> dict:
     }
 
 
+def _prefix_model(name: str | None) -> str | None:
+    """Prepend 'openai/' if no provider prefix present."""
+    if name and "/" not in name:
+        return f"openai/{name}"
+    return name
+
+
 def get_agent_config(config: dict, agent_name: str) -> tuple[str, str | None, str | None]:
     """Resolve (model, api_key, base_url) for a specific agent.
 
@@ -81,7 +88,7 @@ def get_agent_config(config: dict, agent_name: str) -> tuple[str, str | None, st
         am = agent_models.get(agent_name)
         if am and isinstance(am, dict):
             return (
-                am.get("name") or config["model"],
+                _prefix_model(am.get("name")) or config["model"],
                 am.get("api_key") or config["api_key"],
                 am.get("base_url") or config["base_url"],
             )

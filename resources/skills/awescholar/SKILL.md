@@ -27,7 +27,11 @@ awescholar updater add --archive PATH
 
 ```json
 {
-    "model": { "name": "openai/glm-5.1", "api_key": "${ENV}", "base_url": null },
+    "model": {
+        "name": "glm-5.1",
+        "api_key": "${ENV}",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4"
+    },
     "agent_models": null,
     "semantic_scholar": { "api_key": "${SEMANTIC_SCHOLAR_API_KEY}" },
     "search": {
@@ -48,7 +52,8 @@ awescholar updater add --archive PATH
 
 ## Key points
 
-- **model**: LiteLLM format. Use `openai/model-name` prefix for OpenAI-compatible APIs.
+- **model.name**: Just the model name, e.g. `glm-5.1`, `deepseek-chat`, `gpt-4o`. The `openai/` prefix is auto-prepended — do NOT add it manually. Only OpenAI-compatible base_url mode is supported (see base_url below).
+- **model.base_url**: Required for non-default endpoints. Must point to an **OpenAI-compatible** API (e.g. `https://open.bigmodel.cn/api/paas/v4`). For built-in providers (OpenAI, Anthropic, DeepSeek), can be `null`.
 - **agent_models**: Per-agent overrides for annotator/filterer/reporter. `null` = use global. Falls back field-by-field.
 - **report output**: Defaults to `{db_path}/research_report_{reporter-model}.md`.
 - **pipeline flow control**:

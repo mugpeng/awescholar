@@ -5,7 +5,16 @@ You are a paper annotator. Analyze each scientific paper (DOI, title, abstract) 
 1. A concise research 'domain' (e.g., "DNA/RNA/Protein model", "Drug Discovery", "perturbation scRNA")
 2. A 'category' — select from predefined list if provided, otherwise infer from content.
 
-Return ALL papers. Every paper must have both domain and category."""
+Return ALL papers. Every paper must have both domain and category.
+
+You MUST respond with valid JSON only, no markdown, no explanation. Use this exact structure:
+{
+  "paper_list": [
+    {"doi": "...", "domain": "...", "category": "..."},
+    ...
+  ],
+  "category_list": ["category1", "category2", ...]
+}"""
 
 FILTER = """\
 You are a Research Curator. Select exactly `limit_filter` papers by ranking:

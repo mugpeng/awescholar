@@ -60,17 +60,21 @@ def run_annotate(
         papers_xml += f"<paper>\n  <doi>{p['doi']}</doi>\n  <title>{p['title']}</title>{abstract_part}\n</paper>\n"
     papers_xml += f"</papers>\n<predefined_category_list>\n{cat_str}\n</predefined_category_list>"
 
-    result = complete(
-        model=model, system=prompts.ANNOTATOR, user=papers_xml,
-        response_format=AnnotationResult, api_key=api_key, base_url=base_url,
-    )
-    if isinstance(result, str):
-        result = complete(
-            model=model, system=prompts.ANNOTATOR, user=papers_xml,
-            response_format=AnnotationResult, api_key=api_key, base_url=base_url,
-        )
-        if isinstance(result, str):
-            raise RuntimeError(f"Annotator LLM returned invalid response. Raw: {result[:200]}")
+    max_retries = 3
+    result = None
+    for attempt in range(max_retries):
+        try:
+            result = complete(
+                model=model, system=prompts.ANNOTATOR, user=papers_xml,
+                response_format=AnnotationResult, api_key=api_key, base_url=base_url,
+            )
+            if isinstance(result, AnnotationResult):
+                break
+        except Exception:
+            if attempt == max_retries - 1:
+                raise
+    if not isinstance(result, AnnotationResult):
+        raise RuntimeError(f"Annotator LLM returned invalid response after {max_retries} attempts.")
 
     paper_map = {p["doi"]: p for p in papers}
     structured: dict[str, list[dict]] = {}

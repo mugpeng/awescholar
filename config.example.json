@@ -29,7 +29,8 @@
         "include_abstracts": true
     },
     "filter": {
-        "limit": 20
+        "limit": 20,
+        "research_interests": null
     },
     "output": {
         "db_path": "output",
@@ -39,6 +40,7 @@
         "skip_search": false,
         "use_updater_json": false,
         "use_filtered_json": false,
+        "existing_json_path": null,
         "merge_new_to_old": false
     },
     "categories": [

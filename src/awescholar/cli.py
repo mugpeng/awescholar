@@ -250,7 +250,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
 
     output = args.output or config.get("report_filename")
     if not output:
-        _, reporter_model, _ = get_agent_config(config, "reporter")
+        reporter_model, _, _ = get_agent_config(config, "reporter")
         model_suffix = reporter_model.split("/")[-1]
         output = os.path.join(config["db_path"], f"research_report_{model_suffix}.md")
     os.makedirs(os.path.dirname(output) or ".", exist_ok=True)

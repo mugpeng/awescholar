@@ -101,7 +101,7 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 ```json
 "agent_models": {
     "annotator": { "profile": "deepseek", "name": "deepseek-chat" },
-    "filterer":  { "name": "gpt-4.1-mini", "api_key": "...", "base_url": "..." },
+    "filterer":  { "profile": "glm", "name": "glm-5.1" },
     "reporter":  { "profile": "glm", "name": "glm-5.1" }
 }
 ```

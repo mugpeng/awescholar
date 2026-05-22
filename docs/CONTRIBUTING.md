@@ -57,9 +57,15 @@ Steps are composable. Run the full pipeline with `awescholar run` or individual 
 
 Config uses `${ENV_VAR}` expansion. Sensitive values (API keys) must use `${VAR}` syntax in `config.example.json`, never hardcoded. The CLI resolves these from environment variables at load time.
 
-Top-level keys: `model`, `agent_models`, `semantic_scholar`, `search`, `filter`, `output`, `pipeline`, `categories`.
+Top-level keys: `model_profiles`, `model`, `agent_models`, `semantic_scholar`, `search`, `filter`, `output`, `pipeline`, `categories`.
 
-**`agent_models`**: per-agent model overrides for annotator, filterer, reporter. Falls back to global `model` config if not set.
+**`model_profiles`**: reusable profile map — each profile defines `api_key` and `base_url`. Referenced by `model.profile` or `agent_models.*.profile`.
+
+**`model.name`**: just the model name (e.g. `glm-5.1`). The `openai/` prefix is auto-prepended by `_prefix_model()`.
+
+**`agent_models`**: per-agent model overrides for annotator, filterer, reporter. Each entry can use `profile` to reference `model_profiles`. Falls back to global `model` config if not set.
+
+**`filter.research_interests`**: optional string for relevance weighting during filtering.
 
 **`pipeline`**: flow control flags — `skip_search`, `use_updater_json`, `use_filtered_json`, `existing_json_path`, `merge_new_to_old`. Allows reusing intermediate JSON files to skip pipeline steps.
 

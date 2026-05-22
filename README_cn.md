@@ -31,7 +31,7 @@ pip install -e .
 
 ```bash
 # 设置 API key（添加到 ~/.zshrc 或 ~/.bashrc 可持久保存）
-export AWESCHOLAR_API_KEY="sk-..."
+export GLM_API_KEY="sk-..."
 export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选，不设则使用免费 tier
 
 # 编辑 config.json 设置模型名称、base_url、搜索词等
@@ -47,10 +47,19 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 
 ```json
 {
+    "model_profiles": {
+        "glm": {
+            "api_key": "${GLM_API_KEY}",
+            "base_url": "https://open.bigmodel.cn/api/paas/v4"
+        },
+        "deepseek": {
+            "api_key": "${DEEPSEEK_API_KEY}",
+            "base_url": null
+        }
+    },
     "model": {
-        "name": "gpt-4.1-mini",
-        "api_key": "${AWESCHOLAR_API_KEY}",
-        "base_url": ""
+        "profile": "glm",
+        "name": "glm-5.1"
     },
     "agent_models": null,
     "semantic_scholar": {
@@ -64,7 +73,8 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
         "include_abstracts": true
     },
     "filter": {
-        "limit": 20
+        "limit": 20,
+        "research_interests": null
     },
     "output": {
         "db_path": "output",
@@ -83,14 +93,20 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 
 `${VAR}` 模式在加载时从环境变量展开。复制 `config.example.json` 并填入你的值 — 或直接设置环境变量，跳过配置文件。
 
-**`agent_models`** — 按 agent 覆盖模型（annotator, filterer, reporter）：
+**`model.name`** — 只写模型名称，如 `glm-5.1`、`deepseek-chat`、`gpt-4o`。`openai/` 前缀会自动添加，不要手动写。
+
+**`model_profiles`** — 可复用的 profile 映射。每个 profile 定义 `api_key` 和 `base_url`，通过 `model.profile` 或 `agent_models.*.profile` 引用，避免重复填写凭证。
+
+**`agent_models`** — 按 agent 覆盖模型（annotator, filterer, reporter）。每个条目可用 `profile` 引用 `model_profiles`，或直接设置 `name`/`api_key`/`base_url`：
 ```json
 "agent_models": {
-    "annotator": { "name": "gpt-4.1-mini", "api_key": "...", "base_url": "..." },
-    "filterer":  { "name": "deepseek/deepseek-chat" },
-    "reporter":  { "name": "gpt-4.1" }
+    "annotator": { "profile": "deepseek", "name": "deepseek-chat" },
+    "filterer":  { "profile": "glm", "name": "glm-5.1" },
+    "reporter":  { "profile": "glm", "name": "glm-5.1" }
 }
 ```
+
+**`filter.research_interests`** — 可选字符串，描述研究兴趣，传给 filterer 做相关性加权。
 
 **`pipeline`** — 控制流水线跳过/复用中间结果：
 - `skip_search`: 从数据库加载论文而不是搜索
@@ -101,7 +117,7 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 
 **`search.query`** — 如果设置了，`crawler run` 可以不传 CLI query 参数。
 
-支持的 LLM 提供商（通过 LiteLLM）：OpenAI、DeepSeek、Gemini、Mistral、自定义端点。
+支持的 LLM 提供商：任何 OpenAI 兼容 API（通过 `base_url`），如 GLM、DeepSeek、Gemini、Mistral、本地端点。
 
 ## 命令
 
@@ -111,9 +127,12 @@ awescholar -v                                         # 显示版本
 # 论文发现流水线
 awescholar crawler search "query"                     # 搜索 Semantic Scholar
 awescholar crawler annotate                           # 标注数据库中的论文
+awescholar crawler annotate --input papers.json       # 从 JSON 标注（跳过 DB）
 awescholar crawler filter --limit 20                  # 选择 top 论文
-awescholar crawler report -o report.md                # 生成 Markdown 报告
-awescholar crawler run ["query"]                       # 完整流水线（如 config 已设 query 则可省略）
+awescholar crawler filter --input updater.json        # 从自定义 JSON 筛选
+awescholar crawler report                             # 生成报告（输出到 stdout）
+awescholar crawler report updater_filter.json -o report.md  # 从自定义 JSON 生成报告
+awescholar crawler run ["query"]                      # 完整流水线（如 config 已设 query 则可省略）
 
 # 存档管理
 awescholar updater update --direction new2old --archive data.json   # 合并到存档
@@ -122,6 +141,8 @@ awescholar updater rss --archive data.json            # 生成 RSS 订阅
 awescholar updater search --archive data.json --by title           # 按标题搜索并添加
 awescholar updater add --archive data.json            # 交互式添加单条记录
 ```
+
+每个子命令都支持 `--input`（report 用位置参数）指定输入文件，无需重跑完整流水线即可独立执行任意步骤。
 
 ## 开发
 

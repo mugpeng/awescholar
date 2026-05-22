@@ -162,16 +162,22 @@ def run_report(
 
 def _resolve_agent(agent_models: dict | None, agent_name: str,
                    fallback_model: str, fallback_key: str | None, fallback_url: str | None,
+                   model_profiles: dict | None = None,
                    ) -> tuple[str, str | None, str | None]:
     """Resolve (model, api_key, base_url) for an agent from agent_models."""
     if agent_models and isinstance(agent_models, dict):
         am = agent_models.get(agent_name)
         if am and isinstance(am, dict):
-            return (
-                am.get("name") or fallback_model,
-                am.get("api_key") or fallback_key,
-                am.get("base_url") or fallback_url,
-            )
+            model_name = am.get("name") or fallback_model
+            profile_name = am.get("profile")
+            if profile_name and model_profiles:
+                p = model_profiles.get(profile_name, {})
+                api_key = p.get("api_key") or am.get("api_key") or fallback_key
+                base_url = p.get("base_url") or am.get("base_url") or fallback_url
+            else:
+                api_key = am.get("api_key") or fallback_key
+                base_url = am.get("base_url") or fallback_url
+            return (model_name, api_key, base_url)
     return fallback_model, fallback_key, fallback_url
 
 
@@ -194,6 +200,7 @@ def run_pipeline(
     use_filtered_json: bool = False,
     existing_json_path: str | None = None,
     merge_new_to_old: bool = False,
+    model_profiles: dict | None = None,
     status_cb: StatusCallback = None,
 ) -> tuple[dict, str]:
     """Run full pipeline with optional skip/resume controls.
@@ -215,7 +222,7 @@ def run_pipeline(
             raise FileNotFoundError(f"Not found: {filtered_path}")
         with open(filtered_path, "r", encoding="utf-8") as f:
             filtered = json.load(f)
-        m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url)
+        m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url, model_profiles=model_profiles)
         report = run_report(
             filtered_data=filtered, model=m,
             date_range=publication_date_or_year or "N/A",
@@ -230,7 +237,7 @@ def run_pipeline(
             raise FileNotFoundError(f"Not found: {updater_path}")
         with open(updater_path, "r", encoding="utf-8") as f:
             structured = json.load(f)
-        m, k, u = _resolve_agent(agent_models, "filterer", model, api_key, base_url)
+        m, k, u = _resolve_agent(agent_models, "filterer", model, api_key, base_url, model_profiles=model_profiles)
         filtered = run_filter(
             structured_data=structured, model=m, limit=limit_filter,
             api_key=k, base_url=u, status_cb=cb,
@@ -238,7 +245,7 @@ def run_pipeline(
         with open(filtered_path, "w", encoding="utf-8") as f:
             json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
         cb(f"Saved filtered data to {filtered_path}")
-        m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url)
+        m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url, model_profiles=model_profiles)
         report = run_report(
             filtered_data=filtered, model=m,
             date_range=publication_date_or_year or "N/A",
@@ -273,7 +280,7 @@ def run_pipeline(
             raise RuntimeError("No papers found for the given query. Try broadening your search terms.")
 
     # --- Annotate phase ---
-    m, k, u = _resolve_agent(agent_models, "annotator", model, api_key, base_url)
+    m, k, u = _resolve_agent(agent_models, "annotator", model, api_key, base_url, model_profiles=model_profiles)
     structured = run_annotate(
         papers=papers, model=m, categories=categories,
         include_abstracts=include_abstracts, api_key=k, base_url=u, status_cb=cb,
@@ -283,7 +290,7 @@ def run_pipeline(
     cb(f"Saved annotated data to {updater_path}")
 
     # --- Filter phase ---
-    m, k, u = _resolve_agent(agent_models, "filterer", model, api_key, base_url)
+    m, k, u = _resolve_agent(agent_models, "filterer", model, api_key, base_url, model_profiles=model_profiles)
     filtered = run_filter(
         structured_data=structured, model=m, limit=limit_filter,
         api_key=k, base_url=u, status_cb=cb,
@@ -293,7 +300,7 @@ def run_pipeline(
     cb(f"Saved filtered data to {filtered_path}")
 
     # --- Report phase ---
-    m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url)
+    m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url, model_profiles=model_profiles)
     report = run_report(
         filtered_data=filtered, model=m,
         date_range=publication_date_or_year or "N/A",

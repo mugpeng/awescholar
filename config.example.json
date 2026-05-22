@@ -1,17 +1,30 @@
-{
+{    
+    "model_profiles": {
+        "glm": {
+            "api_key": "${GLM_API_KEY}",
+            "base_url": "your-openai-compatible-endpoint"
+        },
+        "gemini": {
+            "api_key": "${GEMINI_API_KEY}",
+            "base_url": "your-openai-compatible-endpoint"
+        },
+        "mimo": {
+            "api_key": "${XIAOMI_API_KEY}",
+            "base_url": "your-openai-compatible-endpoint"
+        }
+    },
     "model": {
-        "name": "gpt-4.1-mini",
-        "api_key": "${AWESCHOLAR_API_KEY}",
-        "base_url": ""
+        "profile": "glm",
+        "name": "glm-5.1"
     },
     "agent_models": null,
     "semantic_scholar": {
-        "api_key": "${SEMANTICSCHOLAR_API_KEY}"
+        "api_key": "${SEMANTIC_SCHOLAR_API_KEY}"
     },
     "search": {
         "query": "AI agent|large language model|foundation model",
-        "fields_of_study": ["Biology", "Medicine", "Computer Science"],
-        "publication_date": "2025-01-01:2025-05-30",
+        "fields_of_study": ["Biology", "Medicine"],
+        "publication_date": "2025-12-15:2025-12-31",
         "limit": 100,
         "include_abstracts": true
     },
@@ -26,7 +39,6 @@
         "skip_search": false,
         "use_updater_json": false,
         "use_filtered_json": false,
-        "existing_json_path": null,
         "merge_new_to_old": false
     },
     "categories": [

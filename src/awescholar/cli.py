@@ -56,10 +56,22 @@ def load_config(path: str | None) -> dict:
     filt = raw.get("filter", {})
     output = raw.get("output", {})
     pipe = raw.get("pipeline", {})
+    model_profiles = raw.get("model_profiles") or {}
+
+    profile_name = model.get("profile")
+    if profile_name and profile_name in model_profiles:
+        p = model_profiles[profile_name]
+        api_key = p.get("api_key") or model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY")
+        base_url = p.get("base_url") or model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL")
+    else:
+        api_key = model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY")
+        base_url = model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL")
+
     return {
         "model": _prefix_model(model.get("name")) or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
-        "api_key": model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
-        "base_url": model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
+        "api_key": api_key,
+        "base_url": base_url,
+        "model_profiles": model_profiles,
         "agent_models": raw.get("agent_models"),
         "ss_api_key": ss.get("api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
         "search_query": search.get("query"),
@@ -90,16 +102,22 @@ def get_agent_config(config: dict, agent_name: str) -> tuple[str, str | None, st
     """Resolve (model, api_key, base_url) for a specific agent.
 
     Falls back to global model config if no agent-specific override.
+    Supports profile-based resolution from model_profiles.
     """
     agent_models = config.get("agent_models")
     if agent_models and isinstance(agent_models, dict):
         am = agent_models.get(agent_name)
         if am and isinstance(am, dict):
-            return (
-                _prefix_model(am.get("name")) or config["model"],
-                am.get("api_key") or config["api_key"],
-                am.get("base_url") or config["base_url"],
-            )
+            model_name = _prefix_model(am.get("name")) or config["model"]
+            profile_name = am.get("profile")
+            if profile_name:
+                p = config.get("model_profiles", {}).get(profile_name, {})
+                api_key = p.get("api_key") or am.get("api_key") or config["api_key"]
+                base_url = p.get("base_url") or am.get("base_url") or config["base_url"]
+            else:
+                api_key = am.get("api_key") or config["api_key"]
+                base_url = am.get("base_url") or config["base_url"]
+            return (model_name, api_key, base_url)
     return config["model"], config["api_key"], config["base_url"]
 
 
@@ -213,6 +231,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
         query=query, model=config["model"], db_path=config["db_path"],
         api_key=config["api_key"], ss_api_key=config["ss_api_key"], base_url=config["base_url"],
         agent_models=config.get("agent_models"),
+        model_profiles=config.get("model_profiles"),
         limit_search=args.limit_search or config["limit_search"],
         limit_filter=args.limit_filter or config["limit_filter"],
         categories=config["categories"], include_abstracts=config["include_abstracts"],

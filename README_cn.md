@@ -30,15 +30,17 @@ pip install -e .
 ## 快速开始
 
 ```bash
-# 设置 LLM 提供商
-export AWESCHOLAR_MODEL="gpt-4.1-mini"
+# 设置 API key（添加到 ~/.zshrc 或 ~/.bashrc 可持久保存）
 export AWESCHOLAR_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选，不设则使用免费 tier
+
+# 编辑 config.json 设置模型名称、base_url、搜索词等
 
 # 运行完整流水线
-awescholar crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+awescholar --config config.json crawler run
 
-# 或使用配置文件
-awescholar --config config.json crawler run "foundation model" --date 2025-01-01:2025-05-30
+# 或直接传入搜索词
+awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
 ```
 
 ## 配置
@@ -46,9 +48,9 @@ awescholar --config config.json crawler run "foundation model" --date 2025-01-01
 ```json
 {
     "model": {
-        "name": "${AWESCHOLAR_MODEL}",
+        "name": "gpt-4.1-mini",
         "api_key": "${AWESCHOLAR_API_KEY}",
-        "base_url": "${AWESCHOLAR_BASE_URL}"
+        "base_url": ""
     },
     "agent_models": null,
     "semantic_scholar": {

@@ -1,8 +1,8 @@
 {
     "model": {
-        "name": "${AWESCHOLAR_MODEL}",
+        "name": "gpt-4.1-mini",
         "api_key": "${AWESCHOLAR_API_KEY}",
-        "base_url": "${AWESCHOLAR_BASE_URL}"
+        "base_url": ""
     },
     "agent_models": null,
     "semantic_scholar": {

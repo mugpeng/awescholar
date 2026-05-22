@@ -45,20 +45,59 @@ awescholar --config config.json crawler run "foundation model" --date 2025-01-01
 
 ```json
 {
-    "model": "${AWESCHOLAR_MODEL}",
-    "api_key": "${AWESCHOLAR_API_KEY}",
-    "base_url": "${AWESCHOLAR_BASE_URL}",
-    "ss_api_key": "${SEMANTICSCHOLAR_API_KEY}",
-    "db_path": "output",
-    "limit_search": 100,
-    "limit_filter": 20,
-    "categories": ["Foundation Models", "Drug Discovery", "Perturbation Study"],
-    "fields_of_study": ["Biology", "Medicine"],
-    "publication_date": "2025-01-01:2025-05-30"
+    "model": {
+        "name": "${AWESCHOLAR_MODEL}",
+        "api_key": "${AWESCHOLAR_API_KEY}",
+        "base_url": "Your AWESCHOLAR_BASE_URL"
+    },
+    "agent_models": null,
+    "semantic_scholar": {
+        "api_key": "${SEMANTICSCHOLAR_API_KEY}"
+    },
+    "search": {
+        "query": "AI agent|large language model|foundation model",
+        "fields_of_study": ["Biology", "Medicine", "Computer Science"],
+        "publication_date": "2025-01-01:2025-05-30",
+        "limit": 100,
+        "include_abstracts": true
+    },
+    "filter": {
+        "limit": 20
+    },
+    "output": {
+        "db_path": "output",
+        "report_filename": null
+    },
+    "pipeline": {
+        "skip_search": false,
+        "use_updater_json": false,
+        "use_filtered_json": false,
+        "existing_json_path": null,
+        "merge_new_to_old": false
+    },
+    "categories": ["Foundation Models", "Drug Discovery", "Perturbation Study"]
 }
 ```
 
 `${VAR}` patterns are expanded from environment variables at load time. Copy `config.example.json` and fill in your values — or set env vars directly and skip the config file.
+
+**`agent_models`** — override model per agent (annotator, filterer, reporter):
+```json
+"agent_models": {
+    "annotator": { "name": "gpt-4.1-mini", "api_key": "...", "base_url": "..." },
+    "filterer":  { "name": "deepseek/deepseek-chat" },
+    "reporter":  { "name": "gpt-4.1" }
+}
+```
+
+**`pipeline`** — control flow to skip/reuse intermediate results:
+- `skip_search`: load papers from DB instead of searching
+- `use_updater_json`: reuse existing `updater.json` (skip search + annotate)
+- `use_filtered_json`: reuse existing `updater_filter.json` (skip to report)
+- `existing_json_path`: custom path for updater JSON
+- `merge_new_to_old`: auto-merge new results into archive after pipeline
+
+**`search.query`** — if set, `crawler run` can be called without a CLI query argument.
 
 Supported LLM providers (via LiteLLM): OpenAI, DeepSeek, Gemini, Mistral, custom endpoints.
 
@@ -72,7 +111,7 @@ awescholar crawler search "query"                     # Search Semantic Scholar
 awescholar crawler annotate                           # Annotate papers in DB
 awescholar crawler filter --limit 20                  # Select top papers
 awescholar crawler report -o report.md                # Generate Markdown report
-awescholar crawler run "query"                        # Full pipeline
+awescholar crawler run ["query"]                       # Full pipeline (query optional if set in config)
 
 # Archive management
 awescholar updater update --direction new2old --archive data.json   # Merge to archive

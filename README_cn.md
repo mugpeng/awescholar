@@ -45,20 +45,59 @@ awescholar --config config.json crawler run "foundation model" --date 2025-01-01
 
 ```json
 {
-    "model": "${AWESCHOLAR_MODEL}",
-    "api_key": "${AWESCHOLAR_API_KEY}",
-    "base_url": "${AWESCHOLAR_BASE_URL}",
-    "ss_api_key": "${SEMANTICSCHOLAR_API_KEY}",
-    "db_path": "output",
-    "limit_search": 100,
-    "limit_filter": 20,
-    "categories": ["Foundation Models", "Drug Discovery", "Perturbation Study"],
-    "fields_of_study": ["Biology", "Medicine"],
-    "publication_date": "2025-01-01:2025-05-30"
+    "model": {
+        "name": "${AWESCHOLAR_MODEL}",
+        "api_key": "${AWESCHOLAR_API_KEY}",
+        "base_url": "${AWESCHOLAR_BASE_URL}"
+    },
+    "agent_models": null,
+    "semantic_scholar": {
+        "api_key": "${SEMANTICSCHOLAR_API_KEY}"
+    },
+    "search": {
+        "query": "AI agent|large language model|foundation model",
+        "fields_of_study": ["Biology", "Medicine", "Computer Science"],
+        "publication_date": "2025-01-01:2025-05-30",
+        "limit": 100,
+        "include_abstracts": true
+    },
+    "filter": {
+        "limit": 20
+    },
+    "output": {
+        "db_path": "output",
+        "report_filename": null
+    },
+    "pipeline": {
+        "skip_search": false,
+        "use_updater_json": false,
+        "use_filtered_json": false,
+        "existing_json_path": null,
+        "merge_new_to_old": false
+    },
+    "categories": ["Foundation Models", "Drug Discovery", "Perturbation Study"]
 }
 ```
 
 `${VAR}` 模式在加载时从环境变量展开。复制 `config.example.json` 并填入你的值 — 或直接设置环境变量，跳过配置文件。
+
+**`agent_models`** — 按 agent 覆盖模型（annotator, filterer, reporter）：
+```json
+"agent_models": {
+    "annotator": { "name": "gpt-4.1-mini", "api_key": "...", "base_url": "..." },
+    "filterer":  { "name": "deepseek/deepseek-chat" },
+    "reporter":  { "name": "gpt-4.1" }
+}
+```
+
+**`pipeline`** — 控制流水线跳过/复用中间结果：
+- `skip_search`: 从数据库加载论文而不是搜索
+- `use_updater_json`: 复用已有的 `updater.json`（跳过搜索+标注）
+- `use_filtered_json`: 复用已有的 `updater_filter.json`（直接生成报告）
+- `existing_json_path`: 自定义 updater JSON 路径
+- `merge_new_to_old`: 流水线结束后自动合并到存档
+
+**`search.query`** — 如果设置了，`crawler run` 可以不传 CLI query 参数。
 
 支持的 LLM 提供商（通过 LiteLLM）：OpenAI、DeepSeek、Gemini、Mistral、自定义端点。
 
@@ -72,7 +111,7 @@ awescholar crawler search "query"                     # 搜索 Semantic Scholar
 awescholar crawler annotate                           # 标注数据库中的论文
 awescholar crawler filter --limit 20                  # 选择 top 论文
 awescholar crawler report -o report.md                # 生成 Markdown 报告
-awescholar crawler run "query"                        # 完整流水线
+awescholar crawler run ["query"]                       # 完整流水线（如 config 已设 query 则可省略）
 
 # 存档管理
 awescholar updater update --direction new2old --archive data.json   # 合并到存档

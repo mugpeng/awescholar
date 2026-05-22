@@ -57,6 +57,16 @@ Steps are composable. Run the full pipeline with `awescholar run` or individual 
 
 Config uses `${ENV_VAR}` expansion. Sensitive values (API keys) must use `${VAR}` syntax in `config.example.json`, never hardcoded. The CLI resolves these from environment variables at load time.
 
+**Grouped format** (current): top-level keys are `model`, `agent_models`, `semantic_scholar`, `search`, `filter`, `output`, `pipeline`, `categories`. The CLI auto-detects format by checking if `model` is a dict.
+
+**Legacy flat format** (still supported): top-level keys like `model`, `api_key`, `ss_api_key`, `db_path` directly.
+
+**`agent_models`**: per-agent model overrides for annotator, filterer, reporter. Falls back to global `model` config if not set.
+
+**`pipeline`**: flow control flags — `skip_search`, `use_updater_json`, `use_filtered_json`, `existing_json_path`, `merge_new_to_old`. Allows reusing intermediate JSON files to skip pipeline steps.
+
+**`search.query`**: if set, `crawler run` can omit the CLI query argument.
+
 ## Code Style
 
 - Functional over OOP — no classes except SQLAlchemy models and Pydantic schemas

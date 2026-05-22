@@ -57,9 +57,7 @@ Steps are composable. Run the full pipeline with `awescholar run` or individual 
 
 Config uses `${ENV_VAR}` expansion. Sensitive values (API keys) must use `${VAR}` syntax in `config.example.json`, never hardcoded. The CLI resolves these from environment variables at load time.
 
-**Grouped format** (current): top-level keys are `model`, `agent_models`, `semantic_scholar`, `search`, `filter`, `output`, `pipeline`, `categories`. The CLI auto-detects format by checking if `model` is a dict.
-
-**Legacy flat format** (still supported): top-level keys like `model`, `api_key`, `ss_api_key`, `db_path` directly.
+Top-level keys: `model`, `agent_models`, `semantic_scholar`, `search`, `filter`, `output`, `pipeline`, `categories`.
 
 **`agent_models`**: per-agent model overrides for annotator, filterer, reporter. Falls back to global `model` config if not set.
 

@@ -35,69 +35,38 @@ def _expand_env_vars(value):
 
 
 def load_config(path: str | None) -> dict:
-    """Load config from JSON file, expanding ${ENV_VAR} patterns.
-
-    Supports both grouped (new) and flat (legacy) config formats.
-    Returns a flat dict for compatibility with pipeline code.
-    """
+    """Load config from JSON file, expanding ${ENV_VAR} patterns."""
     load_dotenv()
     raw = {}
     if path and os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             raw = _expand_env_vars(json.load(f))
 
-    # Detect format: if top-level "model" is a dict → grouped; otherwise legacy flat
-    is_grouped = isinstance(raw.get("model"), dict)
-
-    if is_grouped:
-        model = raw.get("model", {})
-        ss = raw.get("semantic_scholar", {})
-        search = raw.get("search", {})
-        filt = raw.get("filter", {})
-        output = raw.get("output", {})
-        pipe = raw.get("pipeline", {})
-        return {
-            "model": model.get("name") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
-            "api_key": model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
-            "base_url": model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
-            "agent_models": raw.get("agent_models"),
-            "ss_api_key": ss.get("api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
-            "search_query": search.get("query"),
-            "fields_of_study": search.get("fields_of_study"),
-            "publication_date": search.get("publication_date"),
-            "limit_search": search.get("limit", 100),
-            "include_abstracts": search.get("include_abstracts", True),
-            "limit_filter": filt.get("limit", 20),
-            "db_path": output.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
-            "report_filename": output.get("report_filename"),
-            "skip_search": pipe.get("skip_search", False),
-            "use_updater_json": pipe.get("use_updater_json", False),
-            "use_filtered_json": pipe.get("use_filtered_json", False),
-            "existing_json_path": pipe.get("existing_json_path"),
-            "merge_new_to_old": pipe.get("merge_new_to_old", False),
-            "categories": raw.get("categories"),
-        }
-
-    # Legacy flat format
+    model = raw.get("model", {})
+    ss = raw.get("semantic_scholar", {})
+    search = raw.get("search", {})
+    filt = raw.get("filter", {})
+    output = raw.get("output", {})
+    pipe = raw.get("pipeline", {})
     return {
-        "model": raw.get("model") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
-        "api_key": raw.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
-        "base_url": raw.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
-        "agent_models": None,
-        "ss_api_key": raw.get("ss_api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
-        "search_query": None,
-        "fields_of_study": raw.get("fields_of_study"),
-        "publication_date": raw.get("publication_date"),
-        "limit_search": raw.get("limit_search", 100),
-        "include_abstracts": raw.get("include_abstracts", True),
-        "limit_filter": raw.get("limit_filter", 20),
-        "db_path": raw.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
-        "report_filename": None,
-        "skip_search": False,
-        "use_updater_json": False,
-        "use_filtered_json": False,
-        "existing_json_path": None,
-        "merge_new_to_old": False,
+        "model": model.get("name") or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
+        "api_key": model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY"),
+        "base_url": model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL"),
+        "agent_models": raw.get("agent_models"),
+        "ss_api_key": ss.get("api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
+        "search_query": search.get("query"),
+        "fields_of_study": search.get("fields_of_study"),
+        "publication_date": search.get("publication_date"),
+        "limit_search": search.get("limit", 100),
+        "include_abstracts": search.get("include_abstracts", True),
+        "limit_filter": filt.get("limit", 20),
+        "db_path": output.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
+        "report_filename": output.get("report_filename"),
+        "skip_search": pipe.get("skip_search", False),
+        "use_updater_json": pipe.get("use_updater_json", False),
+        "use_filtered_json": pipe.get("use_filtered_json", False),
+        "existing_json_path": pipe.get("existing_json_path"),
+        "merge_new_to_old": pipe.get("merge_new_to_old", False),
         "categories": raw.get("categories"),
     }
 

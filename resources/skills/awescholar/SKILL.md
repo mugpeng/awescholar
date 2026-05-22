@@ -53,10 +53,19 @@ Typical re-run scenarios:
 
 ```json
 {
+    "model_profiles": {
+        "glm": {
+            "api_key": "${GLM_API_KEY}",
+            "base_url": "https://open.bigmodel.cn/api/paas/v4"
+        },
+        "deepseek": {
+            "api_key": "${DEEPSEEK_API_KEY}",
+            "base_url": null
+        }
+    },
     "model": {
-        "name": "glm-5.1",
-        "api_key": "${ENV}",
-        "base_url": "https://open.bigmodel.cn/api/paas/v4"
+        "profile": "glm",
+        "name": "glm-5.1"
     },
     "agent_models": null,
     "semantic_scholar": { "api_key": "${SEMANTIC_SCHOLAR_API_KEY}" },
@@ -66,7 +75,7 @@ Typical re-run scenarios:
         "publication_date": "2025-12-15:2025-12-31",
         "limit": 100, "include_abstracts": true
     },
-    "filter": { "limit": 20 },
+    "filter": { "limit": 20, "research_interests": null },
     "output": { "db_path": "output", "report_filename": null },
     "pipeline": {
         "skip_search": false, "use_updater_json": false,
@@ -79,8 +88,10 @@ Typical re-run scenarios:
 ## Key points
 
 - **model.name**: Just the model name, e.g. `glm-5.1`, `deepseek-chat`, `gpt-4o`. The `openai/` prefix is auto-prepended — do NOT add it manually. Only OpenAI-compatible base_url mode is supported (see base_url below).
-- **model.base_url**: Required for non-default endpoints. Must point to an **OpenAI-compatible** API (e.g. `https://open.bigmodel.cn/api/paas/v4`). For built-in providers (OpenAI, Anthropic, DeepSeek), can be `null`.
-- **agent_models**: Per-agent overrides for annotator/filterer/reporter. `null` = use global. Falls back field-by-field.
+- **model_profiles**: Reusable profile map. Each profile defines `api_key` and `base_url`. Referenced by `model.profile` or `agent_models.*.profile` — avoids repeating credentials.
+- **model.base_url**: Required for non-default endpoints. Must point to an **OpenAI-compatible** API (e.g. `https://open.bigmodel.cn/api/paas/v4`). For built-in providers (OpenAI, Anthropic, DeepSeek), can be `null`. If using a profile, this is set in the profile.
+- **agent_models**: Per-agent overrides for annotator/filterer/reporter. `null` = use global. Each entry can use `profile` to reference `model_profiles`, or set `name`/`api_key`/`base_url` directly. Falls back field-by-field.
+- **filter.research_interests**: Optional string describing research focus, passed to filterer for relevance weighting.
 - **report output**: Defaults to `{db_path}/research_report_{reporter-model}.md`.
 - **pipeline flow control**:
   - `use_filtered_json=true` → skip to report

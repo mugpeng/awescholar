@@ -80,6 +80,7 @@ def load_config(path: str | None) -> dict:
         "limit_search": search.get("limit", 100),
         "include_abstracts": search.get("include_abstracts", True),
         "limit_filter": filt.get("limit", 20),
+        "research_interests": filt.get("research_interests"),
         "db_path": output.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
         "report_filename": output.get("report_filename"),
         "skip_search": pipe.get("skip_search", False),
@@ -187,6 +188,7 @@ def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
     filtered = run_filter(
         structured_data=structured, model=model,
         limit=args.limit or config["limit_filter"],
+        research_interests=config.get("research_interests"),
         api_key=api_key, base_url=base_url, status_cb=status,
     )
 
@@ -242,6 +244,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
         use_filtered_json=config["use_filtered_json"],
         existing_json_path=config["existing_json_path"],
         merge_new_to_old=config["merge_new_to_old"],
+        research_interests=config.get("research_interests"),
         status_cb=status,
     )
 

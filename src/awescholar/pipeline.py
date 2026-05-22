@@ -101,6 +101,7 @@ def run_filter(
     structured_data: dict[str, list[dict]],
     model: str,
     limit: int = 20,
+    research_interests: list[str] | None = None,
     api_key: str | None = None,
     base_url: str | None = None,
     status_cb: StatusCallback = None,
@@ -116,9 +117,13 @@ def run_filter(
             for p in papers
         ]
 
+    user_payload: dict = {"papers": minimal, "limit_filter": limit}
+    if research_interests:
+        user_payload["research_interests"] = research_interests
+
     result = complete(
         model=model, system=prompts.FILTER,
-        user=json.dumps({"papers": minimal, "limit_filter": limit}, indent=2, cls=_DateEncoder),
+        user=json.dumps(user_payload, indent=2, cls=_DateEncoder),
         response_format=FilterResult, api_key=api_key, base_url=base_url,
     )
     if isinstance(result, str):
@@ -201,6 +206,7 @@ def run_pipeline(
     existing_json_path: str | None = None,
     merge_new_to_old: bool = False,
     model_profiles: dict | None = None,
+    research_interests: list[str] | None = None,
     status_cb: StatusCallback = None,
 ) -> tuple[dict, str]:
     """Run full pipeline with optional skip/resume controls.
@@ -240,6 +246,7 @@ def run_pipeline(
         m, k, u = _resolve_agent(agent_models, "filterer", model, api_key, base_url, model_profiles=model_profiles)
         filtered = run_filter(
             structured_data=structured, model=m, limit=limit_filter,
+            research_interests=research_interests,
             api_key=k, base_url=u, status_cb=cb,
         )
         with open(filtered_path, "w", encoding="utf-8") as f:

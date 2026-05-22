@@ -31,7 +31,7 @@ pip install -e .
 
 ```bash
 # Set API keys (add to ~/.zshrc or ~/.bashrc to persist)
-export AWESCHOLAR_API_KEY="sk-..."
+export GLM_API_KEY="sk-..."
 export SEMANTICSCHOLAR_API_KEY="your-key"   # optional, without it uses free tier
 
 # Edit config.json to set model name, base_url, search query, etc.
@@ -47,10 +47,19 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 
 ```json
 {
+    "model_profiles": {
+        "glm": {
+            "api_key": "${GLM_API_KEY}",
+            "base_url": "https://open.bigmodel.cn/api/paas/v4"
+        },
+        "deepseek": {
+            "api_key": "${DEEPSEEK_API_KEY}",
+            "base_url": null
+        }
+    },
     "model": {
-        "name": "gpt-4.1-mini",
-        "api_key": "${AWESCHOLAR_API_KEY}",
-        "base_url": ""
+        "profile": "glm",
+        "name": "glm-5.1"
     },
     "agent_models": null,
     "semantic_scholar": {
@@ -64,7 +73,8 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
         "include_abstracts": true
     },
     "filter": {
-        "limit": 20
+        "limit": 20,
+        "research_interests": null
     },
     "output": {
         "db_path": "output",
@@ -83,12 +93,16 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 
 `${VAR}` patterns are expanded from environment variables at load time. Copy `config.example.json` and fill in your values — or set env vars directly and skip the config file.
 
-**`agent_models`** — override model per agent (annotator, filterer, reporter):
+**`model.name`** — just the model name, e.g. `glm-5.1`, `deepseek-chat`, `gpt-4o`. The `openai/` prefix is auto-prepended for OpenAI-compatible endpoints — do NOT add it manually.
+
+**`model_profiles`** — reusable profile map. Each profile defines `api_key` and `base_url`. Referenced by `model.profile` or `agent_models.*.profile`, avoiding credential duplication.
+
+**`agent_models`** — override model per agent (annotator, filterer, reporter). Each entry can use `profile` to reference a `model_profiles` entry, or set `name`/`api_key`/`base_url` directly:
 ```json
 "agent_models": {
-    "annotator": { "name": "gpt-4.1-mini", "api_key": "...", "base_url": "..." },
-    "filterer":  { "name": "deepseek/deepseek-chat" },
-    "reporter":  { "name": "gpt-4.1" }
+    "annotator": { "profile": "deepseek", "name": "deepseek-chat" },
+    "filterer":  { "name": "gpt-4.1-mini", "api_key": "...", "base_url": "..." },
+    "reporter":  { "profile": "glm", "name": "glm-5.1" }
 }
 ```
 
@@ -99,9 +113,11 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 - `existing_json_path`: custom path for updater JSON
 - `merge_new_to_old`: auto-merge new results into archive after pipeline
 
+**`filter.research_interests`** — optional string describing research focus, passed to filterer for relevance weighting.
+
 **`search.query`** — if set, `crawler run` can be called without a CLI query argument.
 
-Supported LLM providers (via LiteLLM): OpenAI, DeepSeek, Gemini, Mistral, custom endpoints.
+Supported LLM providers: any OpenAI-compatible API via `base_url` (e.g. GLM, DeepSeek, Gemini, Mistral, local endpoints).
 
 ## Commands
 
@@ -111,9 +127,12 @@ awescholar -v                                         # Show version
 # Paper discovery pipeline
 awescholar crawler search "query"                     # Search Semantic Scholar
 awescholar crawler annotate                           # Annotate papers in DB
+awescholar crawler annotate --input papers.json       # Annotate from JSON (skip DB)
 awescholar crawler filter --limit 20                  # Select top papers
-awescholar crawler report -o report.md                # Generate Markdown report
-awescholar crawler run ["query"]                       # Full pipeline (query optional if set in config)
+awescholar crawler filter --input updater.json        # Filter from custom JSON
+awescholar crawler report                             # Generate report (stdout)
+awescholar crawler report updater_filter.json -o report.md  # Report from custom JSON
+awescholar crawler run ["query"]                      # Full pipeline (query optional if set in config)
 
 # Archive management
 awescholar updater update --direction new2old --archive data.json   # Merge to archive
@@ -122,6 +141,8 @@ awescholar updater rss --archive data.json            # Generate RSS feed
 awescholar updater search --archive data.json --by title           # Search by title and add
 awescholar updater add --archive data.json            # Interactively add a record
 ```
+
+Each subcommand accepts `--input` (or positional `input` for report) to read from a specific file instead of the default path. This lets you re-run any step independently without re-running the full pipeline.
 
 ## Development
 

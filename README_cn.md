@@ -85,7 +85,8 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
         "use_updater_json": false,
         "use_filtered_json": false,
         "existing_json_path": null,
-        "merge_new_to_old": false
+        "merge_new_to_old": false,
+        "data_json_path": null
     },
     "categories": ["Foundation Models", "Drug Discovery", "Perturbation Study"]
 }
@@ -113,7 +114,10 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 - `use_updater_json`: 复用已有的 `updater.json`（跳过搜索+标注）
 - `use_filtered_json`: 复用已有的 `updater_filter.json`（直接生成报告）
 - `existing_json_path`: 自定义 updater JSON 路径
-- `merge_new_to_old`: 流水线结束后自动合并到存档
+- `merge_new_to_old`: 流水线结束后将筛选结果自动合并到项目数据 JSON
+- `data_json_path`: `merge_new_to_old` 使用的项目数据 JSON 路径；当 `merge_new_to_old` 为 `true` 时必须设置
+
+`existing_json_path` 和 `data_json_path` 是两个不同文件。`existing_json_path` 指向标注阶段的中间文件（`updater.json`），用于复用或写入 annotate 结果。`data_json_path` 指向长期维护的项目数据 JSON，在启用 `merge_new_to_old` 后接收筛选后的论文。
 
 **`search.query`** — 如果设置了，`crawler run` 可以不传 CLI query 参数。
 

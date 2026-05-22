@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import html
 from datetime import datetime
 
@@ -86,6 +87,7 @@ def update_readme(
     project_description: str = "",
     website_url: str = "",
     github_repo: str = "",
+    no_backup: bool = False,
 ):
     """Generate/update README.md tables from archive JSON.
 
@@ -153,6 +155,15 @@ def update_readme(
     parts.append("")
 
     content = "\n".join(parts)
+
+    if not no_backup and os.path.exists(readme_path):
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = f"{readme_path}.{ts}.bak"
+        try:
+            shutil.copy2(readme_path, backup_path)
+            print(f"Created backup: {backup_path}")
+        except Exception as e:
+            print(f"Warning: Could not create backup of {readme_path}: {e}")
 
     with open(readme_path, "w", encoding="utf-8") as f:
         f.write(content)

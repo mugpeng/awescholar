@@ -118,6 +118,49 @@ def test_update_readme_creates_file():
         assert "## Models" in content
 
 
+def test_update_readme_creates_backup_by_default():
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {"Cat": [{"doi": "10.1/a", "title": "P", "year": 2025}]})
+        # Create initial readme
+        with open(readme, "w") as f:
+            f.write("# Old Content\n")
+
+        update_readme(archive, readme)
+
+        # Should have exactly one .bak file
+        bak_files = [f for f in os.listdir(tmp) if f.startswith("readme.md.") and f.endswith(".bak")]
+        assert len(bak_files) == 1
+        assert "2026" in bak_files[0] or "2025" in bak_files[0]  # has timestamp
+
+
+def test_update_readme_no_backup_skips_backup():
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {"Cat": [{"doi": "10.1/a", "title": "P", "year": 2025}]})
+        with open(readme, "w") as f:
+            f.write("# Old Content\n")
+
+        update_readme(archive, readme, no_backup=True)
+
+        bak_files = [f for f in os.listdir(tmp) if f.endswith(".bak")]
+        assert bak_files == []
+
+
+def test_update_readme_no_backup_no_existing_file():
+    """no_backup should not error when readme doesn't exist yet."""
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {"Cat": [{"doi": "10.1/a", "title": "P", "year": 2025}]})
+
+        update_readme(archive, readme, no_backup=True)
+
+        assert os.path.exists(readme)
+
+
 # ── generate_rss ─────────────────────────────────────────────
 
 def test_generate_rss_creates_file():

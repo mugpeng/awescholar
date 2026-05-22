@@ -194,6 +194,27 @@ def _resolve_agent(agent_models: dict | None, agent_name: str,
     return fallback_model, fallback_key, fallback_url
 
 
+def _merge_filtered_to_data(
+    filtered_path: str,
+    data_json_path: str | None,
+    merge_new_to_old: bool,
+    status_cb: StatusCallback,
+) -> None:
+    if not merge_new_to_old:
+        return
+    if not data_json_path:
+        raise RuntimeError("pipeline.data_json_path is required when pipeline.merge_new_to_old is true")
+
+    from .utils import merge_new_to_archive
+
+    parent = os.path.dirname(data_json_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    merge_new_to_archive(filtered_path, data_json_path)
+    cb = status_cb or _noop
+    cb(f"Merged filtered data into {data_json_path}")
+
+
 def run_pipeline(
     query: str | None,
     model: str,
@@ -213,6 +234,7 @@ def run_pipeline(
     use_filtered_json: bool = False,
     existing_json_path: str | None = None,
     merge_new_to_old: bool = False,
+    data_json_path: str | None = None,
     model_profiles: dict | None = None,
     research_interests: list[str] | None = None,
     status_cb: StatusCallback = None,
@@ -236,6 +258,7 @@ def run_pipeline(
             raise FileNotFoundError(f"Not found: {filtered_path}")
         with open(filtered_path, "r", encoding="utf-8") as f:
             filtered = json.load(f)
+        _merge_filtered_to_data(filtered_path, data_json_path, merge_new_to_old, cb)
         m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url, model_profiles=model_profiles)
         report = run_report(
             filtered_data=filtered, model=m,
@@ -260,6 +283,7 @@ def run_pipeline(
         with open(filtered_path, "w", encoding="utf-8") as f:
             json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
         cb(f"Saved filtered data to {filtered_path}")
+        _merge_filtered_to_data(filtered_path, data_json_path, merge_new_to_old, cb)
         m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url, model_profiles=model_profiles)
         report = run_report(
             filtered_data=filtered, model=m,
@@ -313,6 +337,7 @@ def run_pipeline(
     with open(filtered_path, "w", encoding="utf-8") as f:
         json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
     cb(f"Saved filtered data to {filtered_path}")
+    _merge_filtered_to_data(filtered_path, data_json_path, merge_new_to_old, cb)
 
     # --- Report phase ---
     m, k, u = _resolve_agent(agent_models, "reporter", model, api_key, base_url, model_profiles=model_profiles)

@@ -88,6 +88,7 @@ def load_config(path: str | None) -> dict:
         "use_filtered_json": pipe.get("use_filtered_json", False),
         "existing_json_path": pipe.get("existing_json_path"),
         "merge_new_to_old": pipe.get("merge_new_to_old", False),
+        "data_json_path": pipe.get("data_json_path"),
         "categories": raw.get("categories"),
     }
 
@@ -244,6 +245,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
         use_filtered_json=config["use_filtered_json"],
         existing_json_path=config["existing_json_path"],
         merge_new_to_old=config["merge_new_to_old"],
+        data_json_path=config["data_json_path"],
         research_interests=config.get("research_interests"),
         status_cb=status,
     )
@@ -279,6 +281,7 @@ def cmd_readme(args: argparse.Namespace, config: dict) -> int | None:
         archive_path=args.archive, readme_path=readme_path,
         project_title=args.title or "Awesome Scholar",
         project_description=args.description or "",
+        no_backup=args.no_backup,
     )
     print(f"README updated at {readme_path}")
 
@@ -290,7 +293,13 @@ def cmd_rss(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_search_record(args: argparse.Namespace, config: dict) -> int | None:
-    search_and_add(archive_path=args.archive, by=args.by, api_key=config["ss_api_key"])
+    if not args.archive and not args.json_file:
+        print("Error: provide --archive or --json-file")
+        return 1
+    search_and_add(
+        archive_path=args.archive, by=args.by,
+        api_key=config["ss_api_key"], json_file=args.json_file,
+    )
 
 
 def cmd_add(args: argparse.Namespace, config: dict) -> int | None:
@@ -349,6 +358,7 @@ def main() -> int:
     p.add_argument("--readme", type=str, help="Output README path")
     p.add_argument("--title", type=str, help="Project title")
     p.add_argument("--description", type=str, help="Project description")
+    p.add_argument("--no-backup", action="store_true", help="Do not create a backup of the README before updating")
 
     p = updater_sub.add_parser("rss", help="Generate RSS feed from archive")
     p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
@@ -356,7 +366,8 @@ def main() -> int:
     p.add_argument("--title", type=str, help="Feed title")
 
     p = updater_sub.add_parser("search", help="Search Semantic Scholar by title/DOI and add to archive")
-    p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
+    p.add_argument("--archive", type=str, help="Path to archive JSON")
+    p.add_argument("--json-file", type=str, help="Save to a flat JSON list for review (instead of archive)")
     p.add_argument("--by", choices=["title", "doi"], default="title", help="Search by title or DOI (default: title)")
 
     p = updater_sub.add_parser("add", help="Interactively add a single record to archive")

@@ -104,6 +104,28 @@ def _save_archive(archive_path: str, data) -> None:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def _load_flat_json(path: str) -> list:
+    """Load a flat JSON list file. Returns empty list if not found."""
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    # Flatten dict format to list if needed
+    if isinstance(data, dict):
+        flat = []
+        for papers in data.values():
+            if isinstance(papers, list):
+                flat.extend(papers)
+        return flat
+    return data
+
+
+def _save_flat_json(path: str, papers: list) -> None:
+    """Save papers as a flat JSON list."""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(papers, f, indent=2, ensure_ascii=False)
+
+
 def _is_duplicate(papers: list, record: dict) -> bool:
     for existing in papers:
         if existing.get("title") == record["title"]:
@@ -113,11 +135,17 @@ def _is_duplicate(papers: list, record: dict) -> bool:
     return False
 
 
-def search_and_add(archive_path: str, by: str = "title", api_key: str | None = None) -> None:
-    """Search Semantic Scholar by title or DOI and add records to archive."""
+def search_and_add(
+    archive_path: str | None = None,
+    by: str = "title",
+    api_key: str | None = None,
+    json_file: str | None = None,
+) -> None:
+    """Search Semantic Scholar by title or DOI and add records to archive or json file."""
+    target = json_file or archive_path
     print(f"\nSemantic Scholar Paper Search")
     print(f"Search by: {by}")
-    print(f"Archive: {archive_path}")
+    print(f"Target: {target}")
 
     queries = []
     print(f"\nEnter paper {by} (empty line to finish):")
@@ -132,43 +160,71 @@ def search_and_add(archive_path: str, by: str = "title", api_key: str | None = N
         return
 
     sch = _get_client(api_key)
-    archive = _load_archive(archive_path)
-    if not isinstance(archive, dict):
-        archive = {"papers": archive}
 
-    added = 0
-    for i, query in enumerate(queries, 1):
-        print(f"\n[{i}/{len(queries)}] Searching: {query}")
-        record = search_by_title(query, sch) if by == "title" else search_by_doi(query, sch)
+    if json_file:
+        # Flat list mode: save to a standalone JSON file for review
+        papers_list = _load_flat_json(json_file)
+        added = 0
+        for i, query in enumerate(queries, 1):
+            print(f"\n[{i}/{len(queries)}] Searching: {query}")
+            record = search_by_title(query, sch) if by == "title" else search_by_doi(query, sch)
 
-        if not record:
-            print("  Not found.")
-            continue
+            if not record:
+                print("  Not found.")
+                continue
 
-        # Flatten all papers across categories for dedup
-        all_papers = []
-        for cat_papers in archive.values():
-            if isinstance(cat_papers, list):
-                all_papers.extend(cat_papers)
+            if _is_duplicate(papers_list, record):
+                print(f"  Already exists: {record['title'][:60]}")
+                continue
 
-        if _is_duplicate(all_papers, record):
-            print(f"  Already exists: {record['title'][:60]}")
-            continue
+            papers_list.append(record)
+            added += 1
+            print(f"  Added: {record['title'][:60]}")
 
-        # Add to first category or a default one
-        categories = list(archive.keys())
-        target = categories[0] if categories else "papers"
-        if target not in archive:
-            archive[target] = []
-        archive[target].append(record)
-        added += 1
-        print(f"  Added: {record['title'][:60]}")
-
-    if added:
-        _save_archive(archive_path, archive)
-        print(f"\nAdded {added} paper(s) to {archive_path}")
+        if added:
+            _save_flat_json(json_file, papers_list)
+            print(f"\nAdded {added} paper(s) to {json_file}")
+        else:
+            print("\nNo new papers were added.")
     else:
-        print("\nNo new papers were added.")
+        # Archive mode: save to categorized archive dict
+        archive = _load_archive(archive_path)
+        if not isinstance(archive, dict):
+            archive = {"papers": archive}
+
+        added = 0
+        for i, query in enumerate(queries, 1):
+            print(f"\n[{i}/{len(queries)}] Searching: {query}")
+            record = search_by_title(query, sch) if by == "title" else search_by_doi(query, sch)
+
+            if not record:
+                print("  Not found.")
+                continue
+
+            # Flatten all papers across categories for dedup
+            all_papers = []
+            for cat_papers in archive.values():
+                if isinstance(cat_papers, list):
+                    all_papers.extend(cat_papers)
+
+            if _is_duplicate(all_papers, record):
+                print(f"  Already exists: {record['title'][:60]}")
+                continue
+
+            # Add to first category or a default one
+            categories = list(archive.keys())
+            target = categories[0] if categories else "papers"
+            if target not in archive:
+                archive[target] = []
+            archive[target].append(record)
+            added += 1
+            print(f"  Added: {record['title'][:60]}")
+
+        if added:
+            _save_archive(archive_path, archive)
+            print(f"\nAdded {added} paper(s) to {archive_path}")
+        else:
+            print("\nNo new papers were added.")
 
 
 def add_interactive(archive_path: str, categories: list[str] | None = None) -> None:

@@ -85,7 +85,8 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
         "use_updater_json": false,
         "use_filtered_json": false,
         "existing_json_path": null,
-        "merge_new_to_old": false
+        "merge_new_to_old": false,
+        "data_json_path": null
     },
     "categories": ["Foundation Models", "Drug Discovery", "Perturbation Study"]
 }
@@ -111,7 +112,10 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 - `use_updater_json`: reuse existing `updater.json` (skip search + annotate)
 - `use_filtered_json`: reuse existing `updater_filter.json` (skip to report)
 - `existing_json_path`: custom path for updater JSON
-- `merge_new_to_old`: auto-merge new results into archive after pipeline
+- `merge_new_to_old`: auto-merge filtered results into your project data JSON after pipeline
+- `data_json_path`: project data JSON path used by `merge_new_to_old`; required when `merge_new_to_old` is `true`
+
+`existing_json_path` and `data_json_path` are different files. `existing_json_path` points to the annotation intermediate file (`updater.json`) used to resume or write the annotate step. `data_json_path` points to the long-lived curated project data JSON that receives filtered papers when `merge_new_to_old` is enabled.
 
 **`filter.research_interests`** — optional string describing research focus, passed to filterer for relevance weighting.
 

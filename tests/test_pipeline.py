@@ -1,0 +1,87 @@
+"""Tests for pipeline orchestration behavior."""
+
+import json
+
+import pytest
+
+from awescholar import pipeline
+from awescholar.schemas import FilteredPaper, FilterResult
+
+
+def test_run_pipeline_auto_merges_filtered_data_when_configured(tmp_path, monkeypatch):
+    updater_path = tmp_path / "updater.json"
+    data_json_path = tmp_path / "data.json"
+    updater_path.write_text(
+        json.dumps(
+            {
+                "Models": [
+                    {
+                        "doi": "10.1/new",
+                        "title": "New Paper",
+                        "venue": "TestConf",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    data_json_path.write_text(
+        json.dumps(
+            {
+                "Models": [
+                    {
+                        "doi": "10.1/old",
+                        "title": "Old Paper",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_complete(*, response_format=None, **kwargs):
+        if response_format is FilterResult:
+            return FilterResult(
+                papers={
+                    "Models": [
+                        FilteredPaper(
+                            doi="10.1/new",
+                            title="New Paper",
+                            venue="TestConf",
+                            reason="Relevant",
+                        )
+                    ]
+                }
+            )
+        return "# Report"
+
+    monkeypatch.setattr(pipeline, "complete", fake_complete)
+
+    pipeline.run_pipeline(
+        query=None,
+        model="openai/test-model",
+        db_path=str(tmp_path),
+        use_updater_json=True,
+        existing_json_path=str(updater_path),
+        merge_new_to_old=True,
+        data_json_path=str(data_json_path),
+    )
+
+    merged = json.loads(data_json_path.read_text(encoding="utf-8"))
+    assert [paper["doi"] for paper in merged["Models"]] == ["10.1/old", "10.1/new"]
+    assert merged["Models"][1]["reason_for_inclusion"] == "Relevant"
+
+
+def test_run_pipeline_requires_data_json_path_when_auto_merge_enabled(tmp_path):
+    filtered_path = tmp_path / "updater_filter.json"
+    filtered_path.write_text(json.dumps({"Models": []}), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="pipeline.data_json_path is required"):
+        pipeline.run_pipeline(
+            query=None,
+            model="openai/test-model",
+            db_path=str(tmp_path),
+            use_filtered_json=True,
+            merge_new_to_old=True,
+            data_json_path=None,
+        )

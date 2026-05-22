@@ -45,7 +45,8 @@
         "use_updater_json": false,
         "use_filtered_json": false,
         "existing_json_path": null,
-        "merge_new_to_old": false
+        "merge_new_to_old": false,
+        "data_json_path": null
     },
     "categories": [
         "Foundation Models",

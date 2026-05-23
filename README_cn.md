@@ -12,14 +12,16 @@
   </p>
   <p>
     <img src="https://img.shields.io/badge/status-alpha-c96a3d?style=flat-square" alt="Status">
+    <img src="https://img.shields.io/badge/install-pip-22C55E?style=flat-square" alt="pip install">
     <img src="https://img.shields.io/badge/platform-cli-334155?style=flat-square" alt="Platform">
+    <img src="https://img.shields.io/pypi/dm/awescholar?style=flat-square" alt="PyPI downloads">
     <img src="https://img.shields.io/github/stars/mugpeng/awescholar?style=flat-square" alt="GitHub stars">
   </p>
 </div>
 
 > 搜索、标注、筛选和报告学术论文 — 并将结果合并到你的 Awesome 列表中。
 
-一个轻量级 CLI 工具，自动化论文策展工作流：查询 Semantic Scholar、用 LLM 标注、按质量筛选、生成 Markdown 报告，并增量合并到维护的存档中。无 agent 框架依赖 — 只需 Python 和 LLM API 调用。
+一个轻量级 CLI 工具，自动化论文策展工作流：查询 Semantic Scholar、用 LLM 标注、按质量筛选、生成 Markdown 报告，并增量合并到长期维护的项目数据 JSON 中。无 agent 框架依赖 — 只需 Python 和 LLM API 调用。
 
 ## 安装
 
@@ -139,11 +141,11 @@ awescholar crawler report updater_filter.json -o report.md  # 从自定义 JSON 
 awescholar crawler run ["query"]                      # 完整流水线（如 config 已设 query 则可省略）
 
 # 存档管理
-awescholar updater update --direction new2old --archive data.json   # 合并到存档
+awescholar updater update --direction new2old --archive data.json   # 合并到项目数据 JSON
 awescholar updater readme --archive data.json         # 生成 README 表格
 awescholar updater rss --archive data.json            # 生成 RSS 订阅
 awescholar updater search --archive data.json --by title           # 按标题搜索并添加
-awescholar updater add --archive data.json            # 交互式添加单条记录
+awescholar updater add --archive data.json            # 交互式添加单条记录到项目数据 JSON
 ```
 
 每个子命令都支持 `--input`（report 用位置参数）指定输入文件，无需重跑完整流水线即可独立执行任意步骤。
@@ -153,6 +155,7 @@ awescholar updater add --archive data.json            # 交互式添加单条记
 ```bash
 pip install -e ".[dev]"
 pytest
+ruff check .
 ```
 
 ## 工作流
@@ -166,7 +169,7 @@ crawler search -> crawler annotate -> crawler filter -> crawler report
                                               updater update new2old
                                                         |
                                                         v
-                                              archive.json -> updater readme / updater rss
+                                              data.json -> updater readme / updater rss
 ```
 
 每个步骤生成一个 JSON 中间文件。你可以独立重新运行任何步骤。

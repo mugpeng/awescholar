@@ -12,14 +12,16 @@
   </p>
   <p>
     <img src="https://img.shields.io/badge/status-alpha-c96a3d?style=flat-square" alt="Status">
+    <img src="https://img.shields.io/badge/install-pip-22C55E?style=flat-square" alt="pip install">
     <img src="https://img.shields.io/badge/platform-cli-334155?style=flat-square" alt="Platform">
+    <img src="https://img.shields.io/pypi/dm/awescholar?style=flat-square" alt="PyPI downloads">
     <img src="https://img.shields.io/github/stars/mugpeng/awescholar?style=flat-square" alt="GitHub stars">
   </p>
 </div>
 
 > Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.
 
-A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained archive. No agent framework — just Python and an LLM API call.
+A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained project data JSON. No agent framework — just Python and an LLM API call.
 
 ## Install
 
@@ -139,11 +141,11 @@ awescholar crawler report updater_filter.json -o report.md  # Report from custom
 awescholar crawler run ["query"]                      # Full pipeline (query optional if set in config)
 
 # Archive management
-awescholar updater update --direction new2old --archive data.json   # Merge to archive
+awescholar updater update --direction new2old --archive data.json   # Merge to project data JSON
 awescholar updater readme --archive data.json         # Generate README tables
 awescholar updater rss --archive data.json            # Generate RSS feed
 awescholar updater search --archive data.json --by title           # Search by title and add
-awescholar updater add --archive data.json            # Interactively add a record
+awescholar updater add --archive data.json            # Interactively add a record to project data JSON
 ```
 
 Each subcommand accepts `--input` (or positional `input` for report) to read from a specific file instead of the default path. This lets you re-run any step independently without re-running the full pipeline.
@@ -153,6 +155,7 @@ Each subcommand accepts `--input` (or positional `input` for report) to read fro
 ```bash
 pip install -e ".[dev]"
 pytest
+ruff check .
 ```
 
 ## Workflow
@@ -166,7 +169,7 @@ crawler search -> crawler annotate -> crawler filter -> crawler report
                                               updater update new2old
                                                         |
                                                         v
-                                              archive.json -> updater readme / updater rss
+                                              data.json -> updater readme / updater rss
 ```
 
 Each step produces a JSON intermediate file. You can re-run any step independently.

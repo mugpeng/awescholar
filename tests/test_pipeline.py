@@ -85,3 +85,38 @@ def test_run_pipeline_requires_data_json_path_when_auto_merge_enabled(tmp_path):
             merge_new_to_old=True,
             data_json_path=None,
         )
+
+
+def test_run_pipeline_uses_same_agent_model_prefixing_as_config(tmp_path, monkeypatch):
+    filtered_path = tmp_path / "updater_filter.json"
+    filtered_path.write_text(json.dumps({"Models": []}), encoding="utf-8")
+    captured = {}
+
+    def fake_run_report(*, model, **kwargs):
+        captured["model"] = model
+        return "# Report"
+
+    monkeypatch.setattr(pipeline, "run_report", fake_run_report)
+
+    pipeline.run_pipeline(
+        query=None,
+        model="openai/global-model",
+        db_path=str(tmp_path),
+        api_key="global-key",
+        base_url="https://global.example",
+        use_filtered_json=True,
+        agent_models={
+            "reporter": {
+                "profile": "glm",
+                "name": "glm-5.1",
+            }
+        },
+        model_profiles={
+            "glm": {
+                "api_key": "profile-key",
+                "base_url": "https://profile.example",
+            }
+        },
+    )
+
+    assert captured["model"] == "openai/glm-5.1"

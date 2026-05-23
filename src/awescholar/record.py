@@ -143,7 +143,7 @@ def search_and_add(
 ) -> None:
     """Search Semantic Scholar by title or DOI and add records to archive or json file."""
     target = json_file or archive_path
-    print(f"\nSemantic Scholar Paper Search")
+    print("\nSemantic Scholar Paper Search")
     print(f"Search by: {by}")
     print(f"Target: {target}")
 

@@ -2,7 +2,10 @@
 
 import json
 
-from awescholar.cli import load_config
+import pytest
+
+from awescholar import __version__
+from awescholar.config import load_config, resolve_agent_config
 
 
 def test_load_config_defaults_data_json_path_to_none():
@@ -21,3 +24,40 @@ def test_load_config_reads_pipeline_data_json_path(tmp_path):
     config = load_config(str(config_path))
 
     assert config["data_json_path"] == "data/data.json"
+
+
+def test_load_config_fails_fast_for_missing_file(tmp_path):
+    missing_path = tmp_path / "missing.json"
+
+    with pytest.raises(FileNotFoundError, match="Config file not found"):
+        load_config(str(missing_path))
+
+
+def test_resolve_agent_config_prefixes_agent_model_names():
+    config = {
+        "model": "openai/global-model",
+        "api_key": "global-key",
+        "base_url": "https://global.example",
+        "model_profiles": {
+            "glm": {
+                "api_key": "profile-key",
+                "base_url": "https://profile.example",
+            }
+        },
+        "agent_models": {
+            "reporter": {
+                "profile": "glm",
+                "name": "glm-5.1",
+            }
+        },
+    }
+
+    model, api_key, base_url = resolve_agent_config(config, "reporter")
+
+    assert model == "openai/glm-5.1"
+    assert api_key == "profile-key"
+    assert base_url == "https://profile.example"
+
+
+def test_version_constant_matches_package_metadata():
+    assert __version__ == "0.1.2"

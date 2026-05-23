@@ -3,14 +3,11 @@
 import argparse
 import json
 import os
-import re
 import sys
 from datetime import date, datetime
-from importlib.metadata import version, PackageNotFoundError
 
-from dotenv import load_dotenv
-
-from .pipeline import run_search, run_annotate, run_filter, run_report, run_pipeline
+from . import __version__
+from .config import load_config, resolve_agent_config
 
 
 class _DateEncoder(json.JSONEncoder):
@@ -18,109 +15,9 @@ class _DateEncoder(json.JSONEncoder):
         if isinstance(o, (date, datetime)):
             return o.isoformat()
         return super().default(o)
-from .utils import merge_new_to_archive, merge_archive_to_new, update_readme, generate_rss
-from .record import search_and_add, add_interactive
-
 
 def get_version() -> str:
-    try:
-        return version("awescholar")
-    except PackageNotFoundError:
-        return "0.1.0"
-
-
-def _expand_env_vars(value):
-    """Replace ${VAR} patterns with environment variable values."""
-    if isinstance(value, str):
-        def _replace(m):
-            return os.environ.get(m.group(1), "")
-        return re.sub(r"\$\{(\w+)\}", _replace, value) or None
-    if isinstance(value, list):
-        return [_expand_env_vars(v) for v in value]
-    if isinstance(value, dict):
-        return {k: _expand_env_vars(v) for k, v in value.items()}
-    return value
-
-
-def load_config(path: str | None) -> dict:
-    """Load config from JSON file, expanding ${ENV_VAR} patterns."""
-    load_dotenv()
-    raw = {}
-    if path and os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            raw = _expand_env_vars(json.load(f))
-
-    model = raw.get("model", {})
-    ss = raw.get("semantic_scholar", {})
-    search = raw.get("search", {})
-    filt = raw.get("filter", {})
-    output = raw.get("output", {})
-    pipe = raw.get("pipeline", {})
-    model_profiles = raw.get("model_profiles") or {}
-
-    profile_name = model.get("profile")
-    if profile_name and profile_name in model_profiles:
-        p = model_profiles[profile_name]
-        api_key = p.get("api_key") or model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY")
-        base_url = p.get("base_url") or model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL")
-    else:
-        api_key = model.get("api_key") or os.getenv("AWESCHOLAR_API_KEY")
-        base_url = model.get("base_url") or os.getenv("AWESCHOLAR_BASE_URL")
-
-    return {
-        "model": _prefix_model(model.get("name")) or os.getenv("AWESCHOLAR_MODEL", "gpt-4.1-mini"),
-        "api_key": api_key,
-        "base_url": base_url,
-        "model_profiles": model_profiles,
-        "agent_models": raw.get("agent_models"),
-        "ss_api_key": ss.get("api_key") or os.getenv("SEMANTICSCHOLAR_API_KEY"),
-        "search_query": search.get("query"),
-        "fields_of_study": search.get("fields_of_study"),
-        "publication_date": search.get("publication_date"),
-        "limit_search": search.get("limit", 100),
-        "include_abstracts": search.get("include_abstracts", True),
-        "limit_filter": filt.get("limit", 20),
-        "research_interests": filt.get("research_interests"),
-        "db_path": output.get("db_path") or os.getenv("AWESCHOLAR_DB_PATH", "output"),
-        "report_filename": output.get("report_filename"),
-        "skip_search": pipe.get("skip_search", False),
-        "use_updater_json": pipe.get("use_updater_json", False),
-        "use_filtered_json": pipe.get("use_filtered_json", False),
-        "existing_json_path": pipe.get("existing_json_path"),
-        "merge_new_to_old": pipe.get("merge_new_to_old", False),
-        "data_json_path": pipe.get("data_json_path"),
-        "categories": raw.get("categories"),
-    }
-
-
-def _prefix_model(name: str | None) -> str | None:
-    """Prepend 'openai/' if no provider prefix present."""
-    if name and "/" not in name:
-        return f"openai/{name}"
-    return name
-
-
-def get_agent_config(config: dict, agent_name: str) -> tuple[str, str | None, str | None]:
-    """Resolve (model, api_key, base_url) for a specific agent.
-
-    Falls back to global model config if no agent-specific override.
-    Supports profile-based resolution from model_profiles.
-    """
-    agent_models = config.get("agent_models")
-    if agent_models and isinstance(agent_models, dict):
-        am = agent_models.get(agent_name)
-        if am and isinstance(am, dict):
-            model_name = _prefix_model(am.get("name")) or config["model"]
-            profile_name = am.get("profile")
-            if profile_name:
-                p = config.get("model_profiles", {}).get(profile_name, {})
-                api_key = p.get("api_key") or am.get("api_key") or config["api_key"]
-                base_url = p.get("base_url") or am.get("base_url") or config["base_url"]
-            else:
-                api_key = am.get("api_key") or config["api_key"]
-                base_url = am.get("base_url") or config["base_url"]
-            return (model_name, api_key, base_url)
-    return config["model"], config["api_key"], config["base_url"]
+    return __version__
 
 
 def status(msg: str) -> None:
@@ -130,6 +27,8 @@ def status(msg: str) -> None:
 # ── Subcommands ──────────────────────────────────────────────
 
 def cmd_search(args: argparse.Namespace, config: dict) -> int | None:
+    from .pipeline import run_search
+
     papers = run_search(
         query=args.query,
         db_path=config["db_path"],
@@ -143,6 +42,8 @@ def cmd_search(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
+    from .pipeline import run_annotate
+
     if args.input:
         if not os.path.exists(args.input):
             print(f"Not found: {args.input}")
@@ -162,7 +63,7 @@ def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
             for p in db_papers
         ]
 
-    model, api_key, base_url = get_agent_config(config, "annotator")
+    model, api_key, base_url = resolve_agent_config(config, "annotator")
     structured = run_annotate(
         papers=papers, model=model, categories=config["categories"],
         include_abstracts=config["include_abstracts"],
@@ -177,6 +78,8 @@ def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
+    from .pipeline import run_filter
+
     updater_path = args.input or os.path.join(config["db_path"], "updater.json")
     if not os.path.exists(updater_path):
         print(f"Not found: {updater_path}. Run 'awescholar crawler annotate' first.")
@@ -185,7 +88,7 @@ def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
     with open(updater_path, "r", encoding="utf-8") as f:
         structured = json.load(f)
 
-    model, api_key, base_url = get_agent_config(config, "filterer")
+    model, api_key, base_url = resolve_agent_config(config, "filterer")
     filtered = run_filter(
         structured_data=structured, model=model,
         limit=args.limit or config["limit_filter"],
@@ -200,6 +103,8 @@ def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_report(args: argparse.Namespace, config: dict) -> int | None:
+    from .pipeline import run_report
+
     filtered_path = args.input or os.path.join(config["db_path"], "updater_filter.json")
     if not os.path.exists(filtered_path):
         print(f"Not found: {filtered_path}. Run 'awescholar crawler filter' first.")
@@ -208,7 +113,7 @@ def cmd_report(args: argparse.Namespace, config: dict) -> int | None:
     with open(filtered_path, "r", encoding="utf-8") as f:
         filtered = json.load(f)
 
-    model, api_key, base_url = get_agent_config(config, "reporter")
+    model, api_key, base_url = resolve_agent_config(config, "reporter")
     report = run_report(
         filtered_data=filtered, model=model,
         date_range=config.get("publication_date") or "N/A",
@@ -225,6 +130,8 @@ def cmd_report(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
+    from .pipeline import run_pipeline
+
     query = args.query or config.get("search_query")
     if not query and not config.get("skip_search"):
         print("Error: query is required (via CLI arg or config search.query)")
@@ -252,7 +159,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
 
     output = args.output or config.get("report_filename")
     if not output:
-        reporter_model, _, _ = get_agent_config(config, "reporter")
+        reporter_model, _, _ = resolve_agent_config(config, "reporter")
         model_suffix = reporter_model.split("/")[-1]
         output = os.path.join(config["db_path"], f"research_report_{model_suffix}.md")
     os.makedirs(os.path.dirname(output) or ".", exist_ok=True)
@@ -262,6 +169,8 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_update(args: argparse.Namespace, config: dict) -> int | None:
+    from .utils import merge_archive_to_new, merge_new_to_archive
+
     new_path = args.input or os.path.join(config["db_path"], "updater_filter.json")
     if not os.path.exists(new_path):
         print(f"Not found: {new_path}. Run 'awescholar crawler run' first.")
@@ -276,6 +185,8 @@ def cmd_update(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_readme(args: argparse.Namespace, config: dict) -> int | None:
+    from .utils import update_readme
+
     readme_path = args.readme or os.path.join(os.path.dirname(args.archive), "readme.md")
     update_readme(
         archive_path=args.archive, readme_path=readme_path,
@@ -287,12 +198,16 @@ def cmd_readme(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_rss(args: argparse.Namespace, config: dict) -> int | None:
+    from .utils import generate_rss
+
     output = args.output or "rss.xml"
     generate_rss(archive_path=args.archive, output_path=output, title=args.title or "Awesome Scholar Updates")
     print(f"RSS feed generated at {output}")
 
 
 def cmd_search_record(args: argparse.Namespace, config: dict) -> int | None:
+    from .record import search_and_add
+
     if not args.archive and not args.json_file:
         print("Error: provide --archive or --json-file")
         return 1
@@ -303,6 +218,8 @@ def cmd_search_record(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_add(args: argparse.Namespace, config: dict) -> int | None:
+    from .record import add_interactive
+
     add_interactive(archive_path=args.archive, categories=config.get("categories"))
 
 
@@ -348,37 +265,41 @@ def main() -> int:
     updater = sub.add_parser("updater", help="Archive data management")
     updater_sub = updater.add_subparsers(dest="updater_command")
 
-    p = updater_sub.add_parser("update", help="Merge data between new results and archive")
+    p = updater_sub.add_parser("update", help="Merge data between new results and project data JSON")
     p.add_argument("--direction", choices=["new2old", "old2new"], required=True)
     p.add_argument("--input", type=str, help="Path to new data JSON")
-    p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
+    p.add_argument("--archive", type=str, required=True, help="Path to project data JSON")
 
-    p = updater_sub.add_parser("readme", help="Generate README tables from archive")
-    p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
+    p = updater_sub.add_parser("readme", help="Generate README tables from project data JSON")
+    p.add_argument("--archive", type=str, required=True, help="Path to project data JSON")
     p.add_argument("--readme", type=str, help="Output README path")
     p.add_argument("--title", type=str, help="Project title")
     p.add_argument("--description", type=str, help="Project description")
     p.add_argument("--no-backup", action="store_true", help="Do not create a backup of the README before updating")
 
-    p = updater_sub.add_parser("rss", help="Generate RSS feed from archive")
-    p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
+    p = updater_sub.add_parser("rss", help="Generate RSS feed from project data JSON")
+    p.add_argument("--archive", type=str, required=True, help="Path to project data JSON")
     p.add_argument("-o", "--output", type=str, help="Output RSS file path")
     p.add_argument("--title", type=str, help="Feed title")
 
-    p = updater_sub.add_parser("search", help="Search Semantic Scholar by title/DOI and add to archive")
-    p.add_argument("--archive", type=str, help="Path to archive JSON")
+    p = updater_sub.add_parser("search", help="Search Semantic Scholar by title/DOI and add to project data JSON")
+    p.add_argument("--archive", type=str, help="Path to project data JSON")
     p.add_argument("--json-file", type=str, help="Save to a flat JSON list for review (instead of archive)")
     p.add_argument("--by", choices=["title", "doi"], default="title", help="Search by title or DOI (default: title)")
 
-    p = updater_sub.add_parser("add", help="Interactively add a single record to archive")
-    p.add_argument("--archive", type=str, required=True, help="Path to archive JSON")
+    p = updater_sub.add_parser("add", help="Interactively add a single record to project data JSON")
+    p.add_argument("--archive", type=str, required=True, help="Path to project data JSON")
 
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
         return 0
 
-    config = load_config(args.config)
+    try:
+        config = load_config(args.config)
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
     if args.command == "crawler":
         if not args.crawler_command:

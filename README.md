@@ -1,8 +1,8 @@
 <div align="center">
   <img src="./logo/hero.png" alt="awescholar" width="800">
   <h1>awescholar: Scientific Literature Curator</h1>
-  <p><strong>Automated scientific literature discovery and curation.</strong></p>
-  <p>Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.</p>
+  <p><strong>AI-agent-operable scientific literature discovery and curation.</strong></p>
+  <p>Search, annotate, filter, and report on academic papers — tell your agent to do it, or run the CLI yourself.</p>
   <p>
     <strong>English</strong> ·
     <a href="./README_cn.md">简体中文</a>
@@ -20,9 +20,31 @@
   </p>
 </div>
 
-> Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.
+> Search, annotate, filter, and report on academic papers — tell your agent to do it, or run the CLI yourself.
 
-A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained project data JSON. No agent framework — just Python and an LLM API call.
+A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained project data JSON. Designed for both human and AI-agent operation — install the skill, and your coding agent can run the entire pipeline from natural-language requests.
+
+## AI Agent Ready
+
+awescholar is designed for AI agents to operate autonomously. Install the skill, and your agent can run the full literature curation pipeline from natural-language requests — no manual CLI steps needed.
+
+**What an AI agent can do with awescholar:**
+
+- Run the full discovery pipeline: search, annotate, filter, report — in one command
+- Merge new results into the project data JSON and regenerate the README
+- Search Semantic Scholar by title or DOI and add papers to the archive
+- Generate RSS feeds for curated collections
+- Re-run any pipeline step independently with custom input
+
+**Example requests you can give your agent:**
+
+> "Search for recent papers about AI agents in biology, filter the top 20, and update the README."
+
+> "Run the awescholar pipeline with my config, then merge the results into docs/data.json."
+
+> "Find this paper by DOI and add it to the project data JSON."
+
+The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understand all available commands, config options, and workflows.
 
 ## Install
 
@@ -167,6 +189,8 @@ awescholar updater add --archive data.json            # Interactively add a reco
 ```
 
 Each subcommand accepts `--input` (or positional `input` for report) to read from a specific file instead of the default path. This lets you re-run any step independently without re-running the full pipeline.
+
+`updater readme` updates only the generated region between `<!-- AWESCHOLAR:START -->` and `<!-- AWESCHOLAR:END -->`. That generated region contains the awescholar table of contents and category tables. Keep custom headings, citation, and project text outside that region. Existing README files without those markers are rejected instead of being overwritten. If the README does not exist yet, `--title` controls the generated top-level heading.
 
 ## Development
 

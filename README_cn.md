@@ -1,8 +1,8 @@
 <div align="center">
   <img src="./logo/hero.png" alt="awescholar" width="800">
   <h1>awescholar: Scientific Literature Curator</h1>
-  <p><strong>自动化科学文献发现与策展。</strong></p>
-  <p>搜索、标注、筛选和报告学术论文 — 并将结果合并到你的 Awesome 列表中。</p>
+  <p><strong>AI agent 可自主执行的科学文献发现与策展。</strong></p>
+  <p>搜索、标注、筛选和报告学术论文 — 告诉你的 agent 去做，或者自己跑 CLI。</p>
   <p>
     <a href="./README.md">English</a> ·
     <strong>简体中文</strong>
@@ -20,9 +20,31 @@
   </p>
 </div>
 
-> 搜索、标注、筛选和报告学术论文 — 并将结果合并到你的 Awesome 列表中。
+> 搜索、标注、筛选和报告学术论文 — 告诉你的 agent 去做，或者自己跑 CLI。
 
-一个轻量级 CLI 工具，自动化论文策展工作流：查询 Semantic Scholar、用 LLM 标注、按质量筛选、生成 Markdown 报告，并增量合并到长期维护的项目数据 JSON 中。无 agent 框架依赖 — 只需 Python 和 LLM API 调用。
+一个轻量级 CLI 工具，自动化论文策展工作流：查询 Semantic Scholar、用 LLM 标注、按质量筛选、生成 Markdown 报告，并增量合并到长期维护的项目数据 JSON。同时支持人类和 AI agent 操作 — 安装 skill 后，你的 coding agent 可以通过自然语言指令执行完整流水线。
+
+## AI Agent 自主执行
+
+awescholar 专为 AI agent 自主操作而设计。安装 skill 后，你的 agent 可以通过自然语言指令执行完整的文献策展流水线 — 无需手动操作 CLI。
+
+**AI agent 能做什么：**
+
+- 一键执行完整发现流水线：搜索、标注、筛选、报告
+- 将新结果合并到项目数据 JSON 并重新生成 README
+- 按标题或 DOI 搜索 Semantic Scholar 并添加论文到存档
+- 为策展集合生成 RSS 订阅
+- 独立重新运行任意流水线步骤，支持自定义输入
+
+**你可以这样告诉你的 agent：**
+
+> "搜索最近关于 AI agents in biology 的论文，筛选 top 20，更新 README。"
+
+> "用我的 config 跑 awescholar 流水线，然后把结果合并到 docs/data.json。"
+
+> "按 DOI 找到这篇论文，添加到项目数据 JSON 里。"
+
+Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用命令、配置选项和工作流。
 
 ## 安装
 
@@ -167,6 +189,8 @@ awescholar updater add --archive data.json            # 交互式添加单条记
 ```
 
 每个子命令都支持 `--input`（report 用位置参数）指定输入文件，无需重跑完整流水线即可独立执行任意步骤。
+
+`updater readme` 只更新 `<!-- AWESCHOLAR:START -->` 和 `<!-- AWESCHOLAR:END -->` 之间的自动生成区域。这个区域包含 awescholar 生成的目录和分类表格。自定义标题、引用和项目介绍应放在 marker 外。已有 README 如果没有这些 marker，会直接报错，避免整文件覆盖。如果 README 还不存在，`--title` 用来控制生成文件的一级标题。
 
 ## 开发
 

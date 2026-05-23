@@ -45,7 +45,9 @@ Steps are composable. Run the full pipeline with `awescholar run` or individual 
 
 **Data flow**: Each step reads/writes JSON files (`updater.json`, `updater_filter.json`, `report.md`). Re-run any step independently.
 
-**Merge model**: `updater update --direction new2old` merges new results into a persistent archive. `old2new` enriches new results with archive data.
+**Merge model**: `updater update --direction new2old` merges new results into a persistent project data JSON. Category names are matched case-insensitively and separator-insensitively, so `AI Agents`, `ai-agents`, and `ai agents` resolve to the existing category key instead of creating duplicate sections. `old2new` enriches new results with project data entries.
+
+**README update model**: `updater readme` only replaces content between `<!-- AWESCHOLAR:START -->` and `<!-- AWESCHOLAR:END -->`. The generated region contains the awescholar table of contents and category tables. Hand-written headers, citations, and other project text must live outside that generated region. Existing README files without markers fail fast instead of being overwritten.
 
 ## Data Model
 
@@ -67,7 +69,7 @@ Top-level keys: `model_profiles`, `model`, `agent_models`, `semantic_scholar`, `
 
 **`filter.research_interests`**: optional string for relevance weighting during filtering.
 
-**`pipeline`**: flow control flags — `skip_search`, `use_updater_json`, `use_filtered_json`, `existing_json_path`, `merge_new_to_old`. Allows reusing intermediate JSON files to skip pipeline steps.
+**`pipeline`**: flow control flags — `skip_search`, `use_updater_json`, `use_filtered_json`, `existing_json_path`, `merge_new_to_old`, `data_json_path`. Allows reusing intermediate JSON files to skip pipeline steps and optionally merge filtered results into the project data JSON.
 
 **`search.query`**: if set, `crawler run` can omit the CLI query argument.
 

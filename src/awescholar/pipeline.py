@@ -6,6 +6,7 @@ from datetime import date, datetime
 from typing import Callable
 
 from . import prompts
+from .categories import canonicalize_category
 from .config import resolve_agent_settings
 from .llm import complete
 from .schemas import AnnotationResult, FilterResult
@@ -91,8 +92,9 @@ def run_annotate(
         paper_data = paper_map.get(ann.doi)
         if not paper_data:
             continue
-        entry = {**paper_data, "domain": ann.domain, "category": ann.category}
-        structured.setdefault(ann.category, []).append(entry)
+        category = canonicalize_category(ann.category, categories or [])
+        entry = {**paper_data, "domain": ann.domain, "category": category}
+        structured.setdefault(category, []).append(entry)
 
     cb(f"Annotated {len(result.paper_list)} papers into {len(structured)} categories.")
     return structured

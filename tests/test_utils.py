@@ -128,6 +128,8 @@ def test_update_readme_creates_file():
         assert os.path.exists(readme)
         content = open(readme).read()
         assert "# Test Awesome" in content
+        assert "<!-- AWESCHOLAR:START -->" in content
+        assert "## Table of Contents" in content
         assert "Test Paper" in content
         assert "## Models" in content
 
@@ -139,7 +141,12 @@ def test_update_readme_creates_backup_by_default():
         _write_json(archive, {"Cat": [{"doi": "10.1/a", "title": "P", "year": 2025}]})
         # Create initial readme
         with open(readme, "w") as f:
-            f.write("# Old Content\n")
+            f.write(
+                "# Old Content\n"
+                "<!-- AWESCHOLAR:START -->\n"
+                "old\n"
+                "<!-- AWESCHOLAR:END -->\n"
+            )
 
         update_readme(archive, readme)
 
@@ -155,7 +162,12 @@ def test_update_readme_no_backup_skips_backup():
         readme = os.path.join(tmp, "readme.md")
         _write_json(archive, {"Cat": [{"doi": "10.1/a", "title": "P", "year": 2025}]})
         with open(readme, "w") as f:
-            f.write("# Old Content\n")
+            f.write(
+                "# Old Content\n"
+                "<!-- AWESCHOLAR:START -->\n"
+                "old\n"
+                "<!-- AWESCHOLAR:END -->\n"
+            )
 
         update_readme(archive, readme, no_backup=True)
 
@@ -204,6 +216,54 @@ def test_update_readme_replaces_only_marker_region():
         assert "old generated content" not in content
         assert "## Models" in content
         assert "Test Paper" in content
+
+
+def test_update_readme_updates_toc_inside_marker_region():
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {
+            "AI Agents": [{"doi": "10.1/a", "title": "Agent Paper", "year": 2025}],
+            "Databases": [{"doi": "10.1/b", "title": "Database Paper", "year": 2025}],
+        })
+        with open(readme, "w", encoding="utf-8") as f:
+            f.write(
+                "# Manual Title\n"
+                "\n"
+                "<!-- AWESCHOLAR:START -->\n"
+                "## Table of Contents\n"
+                "- [Old](#old)\n"
+                "<!-- AWESCHOLAR:END -->\n"
+            )
+
+        update_readme(archive, readme, no_backup=True)
+
+        content = open(readme, encoding="utf-8").read()
+        generated = content.split("<!-- AWESCHOLAR:START -->", 1)[1].split(
+            "<!-- AWESCHOLAR:END -->", 1
+        )[0]
+        assert "- [AI Agents](#ai-agents)" in generated
+        assert "- [Databases](#databases)" in generated
+        assert "- [Old](#old)" not in generated
+
+
+def test_update_readme_toc_does_not_duplicate_case_equivalent_categories():
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {
+            "ai-agents": [{"doi": "10.1/a", "title": "Old Agent", "year": 2025}],
+            "AI Agents": [{"doi": "10.1/b", "title": "New Agent", "year": 2025}],
+        })
+
+        update_readme(archive, readme, project_title="Custom Title", no_backup=True)
+
+        content = open(readme, encoding="utf-8").read()
+        assert content.startswith("# Custom Title")
+        assert content.count("- [ai-agents](#ai-agents)") == 1
+        assert "- [AI Agents](#ai-agents)" not in content
+        assert "Old Agent" in content
+        assert "New Agent" in content
 
 
 def test_update_readme_existing_file_requires_marker():

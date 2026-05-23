@@ -6,6 +6,11 @@ import shutil
 import html
 from datetime import datetime
 
+from .categories import canonicalize_category, find_matching_category
+
+README_START_MARKER = "<!-- AWESCHOLAR:START -->"
+README_END_MARKER = "<!-- AWESCHOLAR:END -->"
+
 
 def merge_new_to_archive(new_path: str, archive_path: str) -> dict:
     """Merge new filtered data into cumulative archive JSON.
@@ -23,18 +28,23 @@ def merge_new_to_archive(new_path: str, archive_path: str) -> dict:
         archive = {}
 
     for category, papers in new_data.items():
-        if category not in archive:
-            archive[category] = []
+        target_category = canonicalize_category(category, archive.keys())
+        if target_category not in archive:
+            archive[target_category] = []
 
-        existing_dois = {p["doi"] for p in archive[category]}
+        existing_dois = {p["doi"] for p in archive[target_category]}
         for paper in papers:
-            if paper["doi"] not in existing_dois:
-                archive[category].append(paper)
+            entry = {**paper}
+            if "category" in entry:
+                entry["category"] = target_category
+            if entry["doi"] not in existing_dois:
+                archive[target_category].append(entry)
+                existing_dois.add(entry["doi"])
             else:
                 # Update existing entry
-                for i, existing in enumerate(archive[category]):
-                    if existing["doi"] == paper["doi"]:
-                        archive[category][i] = {**existing, **paper}
+                for i, existing in enumerate(archive[target_category]):
+                    if existing["doi"] == entry["doi"]:
+                        archive[target_category][i] = {**existing, **entry}
                         break
 
     with open(archive_path, "w", encoding="utf-8") as f:
@@ -59,13 +69,18 @@ def merge_archive_to_new(new_path: str, archive_path: str) -> dict:
         archive = json.load(f)
 
     for category, archive_papers in archive.items():
-        if category not in new_data:
-            new_data[category] = []
+        target_category = canonicalize_category(category, new_data.keys())
+        if target_category not in new_data:
+            new_data[target_category] = []
 
-        existing_dois = {p["doi"] for p in new_data[category]}
+        existing_dois = {p["doi"] for p in new_data[target_category]}
         for paper in archive_papers:
             if paper["doi"] not in existing_dois:
-                new_data[category].append(paper)
+                entry = {**paper}
+                if "category" in entry:
+                    entry["category"] = target_category
+                new_data[target_category].append(entry)
+                existing_dois.add(entry["doi"])
 
     with open(new_path, "w", encoding="utf-8") as f:
         json.dump(new_data, f, indent=2, ensure_ascii=False)
@@ -78,6 +93,32 @@ def _escape_md(text: str) -> str:
     if not text:
         return ""
     return str(text).replace("|", "\\|").replace("\n", " ")
+
+
+def _format_anchor(category: str) -> str:
+    return (
+        str(category)
+        .strip()
+        .lower()
+        .replace("&", "")
+        .replace("/", "")
+        .replace(" ", "-")
+    )
+
+
+def _canonical_archive_sections(archive: dict) -> dict:
+    sections = {}
+    for category, papers in archive.items():
+        if not papers:
+            continue
+        target_category = find_matching_category(category, sections.keys()) or category
+        sections.setdefault(target_category, [])
+        for paper in papers:
+            entry = {**paper}
+            if "category" in entry:
+                entry["category"] = target_category
+            sections[target_category].append(entry)
+    return sections
 
 
 def update_readme(
@@ -97,7 +138,7 @@ def update_readme(
     with open(archive_path, "r", encoding="utf-8") as f:
         archive = json.load(f)
 
-    # Build table of contents
+    archive = _canonical_archive_sections(archive)
     toc_lines = []
     table_sections = []
 
@@ -105,8 +146,7 @@ def update_readme(
         if not papers:
             continue
 
-        anchor = category.replace(" ", "-").replace("&", "")
-        toc_lines.append(f"- [{category}](#{anchor})")
+        toc_lines.append(f"- [{category}](#{_format_anchor(category)})")
 
         # Sort by year descending
         sorted_papers = sorted(papers, key=lambda p: p.get("year") or 0, reverse=True)
@@ -143,18 +183,33 @@ def update_readme(
 
         table_sections.append("\n".join(lines))
 
-    # Assemble README
-    parts = [f"# {project_title}"]
-    if project_description:
-        parts.append(f"\n{project_description}")
-    parts.append("")
-    parts.append("## Table of Contents")
-    parts.extend(toc_lines)
-    parts.append("")
-    parts.extend(table_sections)
-    parts.append("")
+    generated_parts = ["## Table of Contents", *toc_lines, "", *table_sections]
+    generated_content = "\n\n".join(generated_parts).strip() + "\n"
 
-    content = "\n".join(parts)
+    if os.path.exists(readme_path):
+        with open(readme_path, "r", encoding="utf-8") as f:
+            existing_content = f.read()
+        if README_START_MARKER not in existing_content or README_END_MARKER not in existing_content:
+            raise RuntimeError(
+                f"README update requires {README_START_MARKER} and {README_END_MARKER} markers."
+            )
+        before, rest = existing_content.split(README_START_MARKER, 1)
+        _, after = rest.split(README_END_MARKER, 1)
+        content = (
+            f"{before}{README_START_MARKER}\n"
+            f"{generated_content}"
+            f"{README_END_MARKER}{after}"
+        )
+    else:
+        parts = [f"# {project_title}"]
+        if project_description:
+            parts.append(f"\n{project_description}")
+        parts.append("")
+        parts.append(README_START_MARKER)
+        parts.append(generated_content.rstrip())
+        parts.append(README_END_MARKER)
+        parts.append("")
+        content = "\n".join(parts)
 
     if not no_backup and os.path.exists(readme_path):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")

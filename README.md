@@ -141,10 +141,12 @@ awescholar crawler report updater_filter.json -o report.md  # Report from custom
 awescholar crawler run ["query"]                      # Full pipeline (query optional if set in config)
 
 # Archive management
-awescholar updater update --direction new2old --archive data.json   # Merge to project data JSON
-awescholar updater readme --archive data.json         # Generate README tables
+awescholar updater update --direction new2old --input X --archive data.json  # Merge to project data JSON
+awescholar updater readme --archive data.json         # Generate README tables (with .bak backup)
+awescholar updater readme --archive data.json --no-backup  # Generate README without backup
 awescholar updater rss --archive data.json            # Generate RSS feed
-awescholar updater search --archive data.json --by title           # Search by title and add
+awescholar updater search --json-file papers.json --by title   # Search, save for review
+awescholar updater search --archive data.json --by title       # Search and add directly
 awescholar updater add --archive data.json            # Interactively add a record to project data JSON
 ```
 
@@ -165,11 +167,19 @@ crawler search -> crawler annotate -> crawler filter -> crawler report
                                                         |
                                                         v
                                               updater_filter.json
+                                    (or auto-merge if merge_new_to_old=true)
                                                         |
-                                              updater update new2old
-                                                        |
-                                                        v
-                                              data.json -> updater readme / updater rss
+                                  +---------------------+---------------------+
+                                  |                                         |
+                          updater update new2old                  updater search --json-file
+                                  |                                         |
+                                  v                                         v
+                            data.json                               papers.json (review)
+                                  |                                         |
+                          updater readme / rss                    updater update new2old
+                                                                          |
+                                                                          v
+                                                                    data.json
 ```
 
 Each step produces a JSON intermediate file. You can re-run any step independently.

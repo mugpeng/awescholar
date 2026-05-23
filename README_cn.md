@@ -141,10 +141,12 @@ awescholar crawler report updater_filter.json -o report.md  # 从自定义 JSON 
 awescholar crawler run ["query"]                      # 完整流水线（如 config 已设 query 则可省略）
 
 # 存档管理
-awescholar updater update --direction new2old --archive data.json   # 合并到项目数据 JSON
-awescholar updater readme --archive data.json         # 生成 README 表格
+awescholar updater update --direction new2old --input X --archive data.json  # 合并到项目数据 JSON
+awescholar updater readme --archive data.json         # 生成 README 表格（自动备份）
+awescholar updater readme --archive data.json --no-backup  # 生成 README 不备份
 awescholar updater rss --archive data.json            # 生成 RSS 订阅
-awescholar updater search --archive data.json --by title           # 按标题搜索并添加
+awescholar updater search --json-file papers.json --by title   # 搜索并保存待审阅
+awescholar updater search --archive data.json --by title       # 搜索并直接添加
 awescholar updater add --archive data.json            # 交互式添加单条记录到项目数据 JSON
 ```
 
@@ -165,11 +167,19 @@ crawler search -> crawler annotate -> crawler filter -> crawler report
                                                         |
                                                         v
                                               updater_filter.json
+                                    （或 merge_new_to_old=true 时自动合并）
                                                         |
-                                              updater update new2old
-                                                        |
-                                                        v
-                                              data.json -> updater readme / updater rss
+                                  +---------------------+---------------------+
+                                  |                                         |
+                          updater update new2old                  updater search --json-file
+                                  |                                         |
+                                  v                                         v
+                            data.json                               papers.json（审阅）
+                                  |                                         |
+                          updater readme / rss                    updater update new2old
+                                                                          |
+                                                                          v
+                                                                    data.json
 ```
 
 每个步骤生成一个 JSON 中间文件。你可以独立重新运行任何步骤。

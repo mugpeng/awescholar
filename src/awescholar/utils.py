@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import html
 from datetime import datetime
@@ -255,12 +256,32 @@ def update_readme(
     return readme_path
 
 
+def _year_to_rfc822(year_str: str) -> str:
+    """Convert '2025.12' or '2025-12' to RFC 822 date like 'Mon, 01 Dec 2025 00:00:00 GMT'."""
+    if not year_str:
+        return ""
+    normalized = year_str.replace(".", "-")
+    try:
+        dt = datetime.strptime(normalized[:7], "%Y-%m")
+        return dt.strftime("%a, %d %b %Y 00:00:00 GMT")
+    except (ValueError, IndexError):
+        return year_str
+
+
+def _guid_from_paper(title: str, year: str) -> str:
+    """Generate a stable guid: strip non-alpha, concat title+year."""
+    clean = re.sub(r"[^a-zA-Z]", "", title)
+    y = (year or "").replace(".", "")
+    return f"{clean}{y}"
+
+
 def generate_rss(
     archive_path: str,
     output_path: str,
     title: str = "Awesome Scholar Updates",
     link: str = "",
     description: str = "Latest papers from curated collection",
+    rss_url: str = "",
 ):
     """Generate RSS feed from archive JSON."""
     with open(archive_path, "r", encoding="utf-8") as f:
@@ -269,30 +290,56 @@ def generate_rss(
     items = []
     for category, papers in archive.items():
         for p in papers:
-            pub_date = p.get("publication_date", "")
-            title_text = html.escape(p.get("title", "Untitled"))
-            desc = html.escape((p.get("abstract") or "")[:500])
+            ptitle = p.get("title", "Untitled")
+            team = p.get("team", "")
+            domain = p.get("domain", "")
+            venue = p.get("venue", "")
             doi = p.get("doi", "")
-            url = p.get("url", "") or (f"https://doi.org/{doi}" if doi else "")
+            year = p.get("year", "")
+            paper_url = p.get("paperUrl", "") or (f"https://doi.org/{doi}" if doi else "")
+            code_url = p.get("codeUrl", "")
 
-            items.append(f"""<item>
-  <title>{title_text}</title>
-  <link>{html.escape(url)}</link>
-  <description>{desc}</description>
-  <category>{html.escape(category)}</category>
-  <pubDate>{pub_date}</pubDate>
-  <guid>{html.escape(url)}</guid>
-</item>""")
+            # Prefer DOI link for the item link
+            item_link = f"https://doi.org/{doi}" if doi else paper_url
+
+            desc_parts = [f"<p><b>Team:</b> {html.escape(team)}</p>"]
+            if domain:
+                desc_parts.append(f"<p><b>Domain:</b> {html.escape(domain)}</p>")
+            if venue:
+                desc_parts.append(f"<p><b>Venue:</b> {html.escape(venue)}</p>")
+            if paper_url:
+                desc_parts.append(f'<p><a href="{html.escape(paper_url)}">Read the Paper</a></p>')
+            if code_url:
+                desc_parts.append(f'<p><a href="{html.escape(code_url)}">Code</a></p>')
+            cdata = "\n        ".join(desc_parts)
+
+            pub_date = _year_to_rfc822(year)
+            guid = _guid_from_paper(ptitle, year)
+
+            items.append(f"""  <item>
+    <title>{html.escape(ptitle)}</title>
+    <link>{html.escape(item_link)}</link>
+    <description>
+      <![CDATA[
+        {cdata}
+      ]]>
+    </description>
+    <pubDate>{pub_date}</pubDate>
+    <guid isPermaLink="false">{guid}</guid>
+  </item>""")
 
     now = datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT")
-    rss = f"""<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+    atom_link = f'\n  <atom:link href="{html.escape(rss_url)}" rel="self" type="application/rss+xml" />' if rss_url else ""
+
+    rss = f"""<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
   <title>{html.escape(title)}</title>
   <link>{html.escape(link)}</link>
   <description>{html.escape(description)}</description>
-  <lastBuildDate>{now}</lastBuildDate>
-  {"".join(items)}
+  <language>en-us</language>
+  <lastBuildDate>{now}</lastBuildDate>{atom_link}
+{"".join(items)}
 </channel>
 </rss>"""
 

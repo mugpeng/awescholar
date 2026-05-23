@@ -1,5 +1,7 @@
 """Project data field normalization."""
 
+import ast
+
 PROJECT_PAPER_FIELDS = (
     "year",
     "title",
@@ -14,6 +16,22 @@ PROJECT_PAPER_FIELDS = (
     "doi",
 )
 
+UPDATER_PAPER_FIELDS = (
+    "year",
+    "title",
+    "team",
+    "team website",
+    "affiliation",
+    "domain",
+    "abstract",
+    "venue",
+    "paperUrl",
+    "codeUrl",
+    "githubStars",
+    "doi",
+    "reason_for_inclusion",
+)
+
 FIELD_ALIASES = {
     "year": ("year", "publication_date", "publicationDate"),
     "title": ("title",),
@@ -21,11 +39,13 @@ FIELD_ALIASES = {
     "team website": ("team website", "team_website", "teamWebsite"),
     "affiliation": ("affiliation",),
     "domain": ("domain",),
+    "abstract": ("abstract",),
     "venue": ("venue", "journal"),
     "paperUrl": ("paperUrl", "paper_url", "url"),
     "codeUrl": ("codeUrl", "code_url", "codeURL"),
     "githubStars": ("githubStars", "github_stars", "githubStarsUrl"),
     "doi": ("doi", "DOI"),
+    "reason_for_inclusion": ("reason_for_inclusion",),
 }
 
 
@@ -38,17 +58,48 @@ def first_present(data: dict, *keys: str, default: str = ""):
     return default
 
 
-def normalize_project_paper_fields(paper: dict) -> dict:
-    """Project data fields only — drops everything else."""
+def _extract_team_name(authors: str) -> str:
+    """Extract author name from the stored authors string.
+
+    The search step stores authors as str(dict) e.g. "{'name': 'Yutaka Saito'}".
+    """
+    if not authors:
+        return ""
+    if isinstance(authors, str):
+        try:
+            parsed = ast.literal_eval(authors)
+            if isinstance(parsed, dict):
+                return parsed.get("name", "")
+        except (ValueError, SyntaxError):
+            return ""
+    return ""
+
+
+def normalize_paper(paper: dict, fields: tuple) -> dict:
+    """Normalize paper dict to keep only the given fields."""
     entry = {}
-    for field in PROJECT_PAPER_FIELDS:
+    for field in fields:
         entry[field] = first_present(paper, *FIELD_ALIASES[field])
+
+    # Extract team from authors if not already set
+    if not entry.get("team"):
+        entry["team"] = _extract_team_name(paper.get("authors", ""))
 
     year = entry.get("year")
     if isinstance(year, str) and len(year) >= 7:
         entry["year"] = year[:7]
 
     return entry
+
+
+def normalize_project_paper_fields(paper: dict) -> dict:
+    """Project data (data.json) — 11 fields only."""
+    return normalize_paper(paper, PROJECT_PAPER_FIELDS)
+
+
+def normalize_updater_paper_fields(paper: dict) -> dict:
+    """Updater pipeline (updater.json / updater_filter.json) — 13 fields."""
+    return normalize_paper(paper, UPDATER_PAPER_FIELDS)
 
 
 def merge_preserving_nonempty(existing: dict, incoming: dict) -> dict:

@@ -8,7 +8,7 @@ from typing import Callable
 from . import prompts
 from .categories import canonicalize_category
 from .config import resolve_agent_settings
-from .data_fields import normalize_project_paper_fields
+from .data_fields import normalize_project_paper_fields, normalize_updater_paper_fields
 from .llm import complete
 from .schemas import AnnotationResult, FilterResult
 from .search import search_papers
@@ -94,7 +94,7 @@ def run_annotate(
         if not paper_data:
             continue
         category = canonicalize_category(ann.category, categories or [])
-        entry = normalize_project_paper_fields(
+        entry = normalize_updater_paper_fields(
             {**paper_data, "domain": ann.domain, "category": category}
         )
         structured.setdefault(category, []).append(entry)
@@ -151,7 +151,7 @@ def run_filter(
     filtered: dict[str, list[dict]] = {}
     for cat, papers in structured_data.items():
         kept = [
-            normalize_project_paper_fields({**p, "reason_for_inclusion": reasons[p["doi"]]})
+            normalize_updater_paper_fields({**p, "reason_for_inclusion": reasons[p["doi"]]})
             for p in papers
             if p["doi"] in kept_set
         ]

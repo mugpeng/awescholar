@@ -201,7 +201,13 @@ def cmd_rss(args: argparse.Namespace, config: dict) -> int | None:
     from .utils import generate_rss
 
     output = args.output or "rss.xml"
-    generate_rss(archive_path=args.archive, output_path=output, title=args.title or "Awesome Scholar Updates")
+    generate_rss(
+        archive_path=args.archive, output_path=output,
+        title=args.title or "Awesome Scholar Updates",
+        link=args.link or "",
+        description=args.description or "Latest papers from curated collection",
+        rss_url=args.rss_url or "",
+    )
     print(f"RSS feed generated at {output}")
 
 
@@ -281,6 +287,9 @@ def main() -> int:
     p.add_argument("--archive", type=str, required=True, help="Path to project data JSON")
     p.add_argument("-o", "--output", type=str, help="Output RSS file path")
     p.add_argument("--title", type=str, help="Feed title")
+    p.add_argument("--link", type=str, help="Channel link URL")
+    p.add_argument("--rss-url", type=str, help="RSS self-link URL")
+    p.add_argument("--description", type=str, help="Channel description")
 
     p = updater_sub.add_parser("search", help="Search Semantic Scholar by title/DOI and add to project data JSON")
     p.add_argument("--archive", type=str, help="Path to project data JSON")

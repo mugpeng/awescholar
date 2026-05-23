@@ -32,18 +32,21 @@ def merge_new_to_archive(new_path: str, archive_path: str) -> dict:
         if target_category not in archive:
             archive[target_category] = []
 
-        existing_dois = {p["doi"] for p in archive[target_category]}
+        existing_dois = {p.get("doi") for p in archive[target_category] if p.get("doi")}
         for paper in papers:
             entry = {**paper}
             if "category" in entry:
                 entry["category"] = target_category
-            if entry["doi"] not in existing_dois:
+            doi = entry.get("doi")
+            if not doi:
                 archive[target_category].append(entry)
-                existing_dois.add(entry["doi"])
+            elif doi not in existing_dois:
+                archive[target_category].append(entry)
+                existing_dois.add(doi)
             else:
                 # Update existing entry
                 for i, existing in enumerate(archive[target_category]):
-                    if existing["doi"] == entry["doi"]:
+                    if existing.get("doi") == doi:
                         archive[target_category][i] = {**existing, **entry}
                         break
 
@@ -73,14 +76,16 @@ def merge_archive_to_new(new_path: str, archive_path: str) -> dict:
         if target_category not in new_data:
             new_data[target_category] = []
 
-        existing_dois = {p["doi"] for p in new_data[target_category]}
+        existing_dois = {p.get("doi") for p in new_data[target_category] if p.get("doi")}
         for paper in archive_papers:
-            if paper["doi"] not in existing_dois:
+            doi = paper.get("doi")
+            if not doi or doi not in existing_dois:
                 entry = {**paper}
                 if "category" in entry:
                     entry["category"] = target_category
                 new_data[target_category].append(entry)
-                existing_dois.add(entry["doi"])
+                if doi:
+                    existing_dois.add(doi)
 
     with open(new_path, "w", encoding="utf-8") as f:
         json.dump(new_data, f, indent=2, ensure_ascii=False)
@@ -149,7 +154,12 @@ def update_readme(
         toc_lines.append(f"- [{category}](#{_format_anchor(category)})")
 
         # Sort by year descending
-        sorted_papers = sorted(papers, key=lambda p: p.get("year") or 0, reverse=True)
+        def _sort_year(p):
+            y = p.get("year") or ""
+            if isinstance(y, str):
+                return y
+            return str(y)
+        sorted_papers = sorted(papers, key=_sort_year, reverse=True)
 
         lines = [f"## {category}"]
         lines.append("")
@@ -242,7 +252,7 @@ def generate_rss(
         for p in papers:
             pub_date = p.get("publication_date", "")
             title_text = html.escape(p.get("title", "Untitled"))
-            desc = html.escape(p.get("abstract", "")[:500])
+            desc = html.escape((p.get("abstract") or "")[:500])
             doi = p.get("doi", "")
             url = p.get("url", "") or (f"https://doi.org/{doi}" if doi else "")
 

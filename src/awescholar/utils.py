@@ -212,7 +212,7 @@ def update_readme(
 
         table_sections.append("\n".join(lines))
 
-    generated_parts = ["## Table of Contents", *toc_lines, "", *table_sections]
+    generated_parts = [*table_sections]
     generated_content = "\n\n".join(generated_parts).strip() + "\n"
 
     if os.path.exists(readme_path):

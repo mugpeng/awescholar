@@ -39,10 +39,10 @@ def first_present(data: dict, *keys: str, default: str = ""):
 
 
 def normalize_project_paper_fields(paper: dict) -> dict:
-    """Add the canonical project fields while preserving existing source data."""
-    entry = {**paper}
+    """Project data fields only — drops everything else."""
+    entry = {}
     for field in PROJECT_PAPER_FIELDS:
-        entry[field] = first_present(entry, *FIELD_ALIASES[field])
+        entry[field] = first_present(paper, *FIELD_ALIASES[field])
 
     year = entry.get("year")
     if isinstance(year, str) and len(year) >= 7:

@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.1.3
+
+Config module extraction, auto-merge pipeline, and filter limit fix.
+
+### Highlights
+
+- Extract `config.py` module — `load_config`, `prefix_model`, `resolve_agent_settings` moved out of `cli.py` for reuse and testability
+- `pipeline.data_json_path` — auto-merge filtered results into project data JSON after pipeline completes
+- `updater search --json-file` — save search results to flat JSON for review before merging into project data
+- `updater readme --no-backup` — skip timestamped README backup creation
+- Fix: filter now respects `limit` by truncating in LLM ranking order (previously kept all papers)
+- Add ruff as dev dependency (`py310`, `line-length = 100`)
+- Add install and PyPI downloads badges to README
+- Terminology: "archive" → "project data JSON" across docs and CLI help
+- New tests: config loading, agent resolution, CLI help/version, pipeline auto-merge
+
 ## v0.1.2
 
 Model profiles, research interests filter, and PyPI publish fix.

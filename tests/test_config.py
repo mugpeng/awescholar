@@ -60,4 +60,4 @@ def test_resolve_agent_config_prefixes_agent_model_names():
 
 
 def test_version_constant_matches_package_metadata():
-    assert __version__ == "0.1.2"
+    assert __version__ == "0.1.3"

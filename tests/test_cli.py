@@ -27,5 +27,5 @@ def test_version_uses_package_version_without_litellm_warning():
 
     combined = result.stdout + result.stderr
     assert result.returncode == 0
-    assert combined.strip() == "awescholar 0.1.2"
+    assert combined.strip() == "awescholar 0.1.3"
     assert "LiteLLM" not in combined

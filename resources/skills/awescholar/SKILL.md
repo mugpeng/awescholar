@@ -15,6 +15,7 @@ Match the user's intent to a task domain, then follow the workflow below.
 |---|---|---|
 | "Search for papers about X", "find recent papers" | Crawler Pipeline | `awescholar --config cfg.json crawler search "query"` |
 | "Run the full discovery pipeline" | Crawler Pipeline | `awescholar --config cfg.json crawler run "query"` |
+| "Update the project", "full update", "merge and update" | Updater Full | `updater update` → `updater readme` → `updater rss` |
 | "Merge new results into project data", "update the archive" | Updater Merge | `awescholar updater update --direction new2old --input X --archive Y` |
 | "Update the README table" | Updater README | `awescholar updater readme --archive data.json` |
 | "Generate RSS feed" | Updater RSS | `awescholar updater rss --archive data.json` |
@@ -77,6 +78,23 @@ Decision order:
 1. Review `updater_filter.json` before merging — confirm content is appropriate.
 2. `new2old` when new papers should be added to the curated collection.
 3. `old2new` when the new report should include relevant historical papers.
+
+### Updater Full Update
+
+Use when updating the entire project after new data is ready. Chains all three updater steps.
+
+```bash
+# 1. Merge new filtered results into project data
+awescholar updater update --direction new2old --input output/updater_filter.json --archive docs/data.json
+
+# 2. Regenerate README table
+awescholar updater readme --archive docs/data.json --readme readme.md --no-backup
+
+# 3. Regenerate RSS feed
+awescholar updater rss --archive docs/data.json -o docs/rss.xml
+```
+
+Always run all three steps in order. Skipping RSS means subscribers won't see new papers.
 
 ### Updater Search & Add
 

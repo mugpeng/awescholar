@@ -85,6 +85,68 @@ def test_merge_new_reuses_existing_category_with_different_case_and_separator():
         assert result["ai-agents"][1]["category"] == "ai-agents"
 
 
+def test_merge_new_preserves_existing_code_product_fields_when_old_updater_lacks_them():
+    with tempfile.TemporaryDirectory() as tmp:
+        new = os.path.join(tmp, "new.json")
+        archive = os.path.join(tmp, "archive.json")
+        _write_json(new, {
+            "AI Agents": [
+                {
+                    "doi": "10.1101/2025.05.30.656746",
+                    "title": "Biomni: A General-Purpose Biomedical AI Agent",
+                }
+            ]
+        })
+        _write_json(archive, {
+            "AI Agents": [
+                {
+                    "doi": "10.1101/2025.05.30.656746",
+                    "title": "Biomni: A General-Purpose Biomedical AI Agent",
+                    "codeUrl": "https://biomni.stanford.edu/",
+                    "githubStars": "https://img.shields.io/github/stars/snap-stanford/biomni",
+                }
+            ]
+        })
+
+        result = merge_new_to_archive(new, archive)
+
+        paper = result["AI Agents"][0]
+        assert paper["codeUrl"] == "https://biomni.stanford.edu/"
+        assert paper["githubStars"] == "https://img.shields.io/github/stars/snap-stanford/biomni"
+
+
+def test_merge_new_does_not_clear_existing_code_product_fields_with_empty_values():
+    with tempfile.TemporaryDirectory() as tmp:
+        new = os.path.join(tmp, "new.json")
+        archive = os.path.join(tmp, "archive.json")
+        _write_json(new, {
+            "AI Agents": [
+                {
+                    "doi": "10.1101/2025.05.30.656746",
+                    "title": "Biomni: A General-Purpose Biomedical AI Agent",
+                    "codeUrl": "",
+                    "githubStars": "",
+                }
+            ]
+        })
+        _write_json(archive, {
+            "AI Agents": [
+                {
+                    "doi": "10.1101/2025.05.30.656746",
+                    "title": "Biomni: A General-Purpose Biomedical AI Agent",
+                    "codeUrl": "https://biomni.stanford.edu/",
+                    "githubStars": "https://img.shields.io/github/stars/snap-stanford/biomni",
+                }
+            ]
+        })
+
+        result = merge_new_to_archive(new, archive)
+
+        paper = result["AI Agents"][0]
+        assert paper["codeUrl"] == "https://biomni.stanford.edu/"
+        assert paper["githubStars"] == "https://img.shields.io/github/stars/snap-stanford/biomni"
+
+
 # ── merge_archive_to_new ─────────────────────────────────────
 
 def test_merge_archive_enriches_new():
@@ -264,6 +326,37 @@ def test_update_readme_toc_does_not_duplicate_case_equivalent_categories():
         assert "- [AI Agents](#ai-agents)" not in content
         assert "Old Agent" in content
         assert "New Agent" in content
+
+
+def test_update_readme_renders_project_data_link_fields_without_clearing_code_product():
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {
+            "AI Agents": [
+                {
+                    "year": "2025.06",
+                    "title": "Biomni: A General-Purpose Biomedical AI Agent",
+                    "team": "Jure Leskovec",
+                    "team website": "https://github.com/snap-stanford",
+                    "affiliation": "Stanford University",
+                    "domain": "Biomedical AI agent for autonomous research workflows",
+                    "venue": "bioRxiv",
+                    "paperUrl": "https://www.biorxiv.org/content/10.1101/2025.05.30.656746v1",
+                    "codeUrl": "https://biomni.stanford.edu/",
+                    "githubStars": "https://img.shields.io/github/stars/snap-stanford/biomni",
+                    "doi": "10.1101/2025.05.30.656746",
+                }
+            ]
+        })
+
+        update_readme(archive, readme, no_backup=True)
+
+        content = open(readme, encoding="utf-8").read()
+        assert "[Link](https://github.com/snap-stanford)" in content
+        assert "[Link](https://www.biorxiv.org/content/10.1101/2025.05.30.656746v1)" in content
+        assert "[Link](https://biomni.stanford.edu/)" in content
+        assert "![GitHub Stars](https://img.shields.io/github/stars/snap-stanford/biomni)" in content
 
 
 def test_update_readme_existing_file_requires_marker():

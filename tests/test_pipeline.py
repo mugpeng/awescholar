@@ -145,3 +145,95 @@ def test_run_annotate_maps_llm_category_to_config_casing(monkeypatch):
 
     assert list(structured) == ["AI Agents"]
     assert structured["AI Agents"][0]["category"] == "AI Agents"
+
+
+def test_run_annotate_outputs_project_data_fields(monkeypatch):
+    def fake_complete(**kwargs):
+        return AnnotationResult(
+            paper_list=[
+                PaperAnnotation(
+                    doi="10.1101/2025.05.30.656746",
+                    domain="Biomedical AI agent for autonomous research workflows",
+                    category="AI Agents",
+                )
+            ],
+            category_list=["AI Agents"],
+        )
+
+    monkeypatch.setattr(pipeline, "complete", fake_complete)
+
+    structured = pipeline.run_annotate(
+        papers=[
+            {
+                "doi": "10.1101/2025.05.30.656746",
+                "title": "Biomni: A General-Purpose Biomedical AI Agent",
+                "year": "2025.06",
+                "team": "Jure Leskovec",
+                "team_website": "https://github.com/snap-stanford",
+                "affiliation": "Stanford University",
+                "venue": "bioRxiv",
+                "url": "https://www.biorxiv.org/content/10.1101/2025.05.30.656746v1",
+                "code_url": "https://biomni.stanford.edu/",
+                "github_stars": "https://img.shields.io/github/stars/snap-stanford/biomni",
+            }
+        ],
+        model="openai/test-model",
+        categories=["AI Agents"],
+    )
+
+    paper = structured["AI Agents"][0]
+    assert paper["year"] == "2025.06"
+    assert paper["title"] == "Biomni: A General-Purpose Biomedical AI Agent"
+    assert paper["team"] == "Jure Leskovec"
+    assert paper["team website"] == "https://github.com/snap-stanford"
+    assert paper["affiliation"] == "Stanford University"
+    assert paper["domain"] == "Biomedical AI agent for autonomous research workflows"
+    assert paper["venue"] == "bioRxiv"
+    assert paper["paperUrl"] == "https://www.biorxiv.org/content/10.1101/2025.05.30.656746v1"
+    assert paper["codeUrl"] == "https://biomni.stanford.edu/"
+    assert paper["githubStars"] == "https://img.shields.io/github/stars/snap-stanford/biomni"
+    assert paper["doi"] == "10.1101/2025.05.30.656746"
+
+
+def test_run_filter_preserves_project_data_fields(monkeypatch):
+    def fake_complete(**kwargs):
+        return FilterResult(
+            papers={
+                "AI Agents": [
+                    FilteredPaper(
+                        doi="10.1101/2025.05.30.656746",
+                        title="Biomni: A General-Purpose Biomedical AI Agent",
+                        venue="bioRxiv",
+                        reason="Relevant biomedical agent",
+                    )
+                ]
+            }
+        )
+
+    monkeypatch.setattr(pipeline, "complete", fake_complete)
+
+    filtered = pipeline.run_filter(
+        {
+            "AI Agents": [
+                {
+                    "year": "2025.06",
+                    "title": "Biomni: A General-Purpose Biomedical AI Agent",
+                    "team": "Jure Leskovec",
+                    "team website": "https://github.com/snap-stanford",
+                    "affiliation": "Stanford University",
+                    "domain": "Biomedical AI agent for autonomous research workflows",
+                    "venue": "bioRxiv",
+                    "paperUrl": "https://www.biorxiv.org/content/10.1101/2025.05.30.656746v1",
+                    "codeUrl": "https://biomni.stanford.edu/",
+                    "githubStars": "https://img.shields.io/github/stars/snap-stanford/biomni",
+                    "doi": "10.1101/2025.05.30.656746",
+                }
+            ]
+        },
+        model="openai/test-model",
+    )
+
+    paper = filtered["AI Agents"][0]
+    assert paper["codeUrl"] == "https://biomni.stanford.edu/"
+    assert paper["githubStars"] == "https://img.shields.io/github/stars/snap-stanford/biomni"
+    assert paper["reason_for_inclusion"] == "Relevant biomedical agent"

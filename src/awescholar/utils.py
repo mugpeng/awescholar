@@ -7,6 +7,7 @@ import html
 from datetime import datetime
 
 from .categories import canonicalize_category, find_matching_category
+from .data_fields import first_present, merge_preserving_nonempty, normalize_project_paper_fields
 
 README_START_MARKER = "<!-- AWESCHOLAR:START -->"
 README_END_MARKER = "<!-- AWESCHOLAR:END -->"
@@ -34,7 +35,7 @@ def merge_new_to_archive(new_path: str, archive_path: str) -> dict:
 
         existing_dois = {p.get("doi") for p in archive[target_category] if p.get("doi")}
         for paper in papers:
-            entry = {**paper}
+            entry = normalize_project_paper_fields(paper)
             if "category" in entry:
                 entry["category"] = target_category
             doi = entry.get("doi")
@@ -47,7 +48,7 @@ def merge_new_to_archive(new_path: str, archive_path: str) -> dict:
                 # Update existing entry
                 for i, existing in enumerate(archive[target_category]):
                     if existing.get("doi") == doi:
-                        archive[target_category][i] = {**existing, **entry}
+                        archive[target_category][i] = merge_preserving_nonempty(existing, entry)
                         break
 
     with open(archive_path, "w", encoding="utf-8") as f:
@@ -80,7 +81,7 @@ def merge_archive_to_new(new_path: str, archive_path: str) -> dict:
         for paper in archive_papers:
             doi = paper.get("doi")
             if not doi or doi not in existing_dois:
-                entry = {**paper}
+                entry = normalize_project_paper_fields(paper)
                 if "category" in entry:
                     entry["category"] = target_category
                 new_data[target_category].append(entry)
@@ -119,11 +120,28 @@ def _canonical_archive_sections(archive: dict) -> dict:
         target_category = find_matching_category(category, sections.keys()) or category
         sections.setdefault(target_category, [])
         for paper in papers:
-            entry = {**paper}
+            entry = normalize_project_paper_fields(paper)
             if "category" in entry:
                 entry["category"] = target_category
             sections[target_category].append(entry)
     return sections
+
+
+def _format_link(url: str) -> str:
+    if not url:
+        return ""
+    if str(url).startswith("["):
+        return str(url)
+    return f"[Link]({url})"
+
+
+def _format_code_product(code_url: str, github_stars: str) -> str:
+    parts = []
+    if code_url:
+        parts.append(_format_link(code_url))
+    if github_stars:
+        parts.append(f"![GitHub Stars]({github_stars})")
+    return " ".join(parts)
 
 
 def update_readme(
@@ -173,19 +191,20 @@ def update_readme(
 
             title = _escape_md(p.get("title", ""))
             team = _escape_md(p.get("team", ""))
-            team_website = p.get("team_website", "")
+            team_website = _format_link(first_present(p, "team website", "team_website"))
             affiliation = _escape_md(p.get("affiliation", ""))
             domain = _escape_md(p.get("domain", ""))
             venue = _escape_md(p.get("venue", ""))
 
             doi = p.get("doi", "")
-            paper_url = p.get("url", "")
+            paper_url = first_present(p, "paperUrl", "paper_url", "url")
             if not paper_url and doi:
                 paper_url = f"https://doi.org/{doi}"
-            paper_link = f"[Link]({paper_url})" if paper_url else ""
+            paper_link = _format_link(paper_url)
 
-            code_url = p.get("code_url", "")
-            code_link = f"[Link]({code_url})" if code_url else ""
+            code_url = first_present(p, "codeUrl", "code_url")
+            github_stars = first_present(p, "githubStars", "github_stars")
+            code_link = _format_code_product(code_url, github_stars)
 
             lines.append(
                 f"| {year} | **{title}** | {team} | {team_website} | {affiliation} | {domain} | {venue} | {paper_link} | {code_link} |"

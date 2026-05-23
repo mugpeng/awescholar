@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="./logo/hero.png" alt="awescholar" width="800">
   <h1>awescholar: Scientific Literature Curator</h1>
   <p><strong>Automated scientific literature discovery and curation.</strong></p>
   <p>Search, annotate, filter, and report on academic papers — then merge results into your Awesome list.</p>
@@ -15,7 +16,7 @@
     <img src="https://img.shields.io/badge/install-pip-22C55E?style=flat-square" alt="pip install">
     <img src="https://img.shields.io/badge/platform-cli-334155?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/pypi/dm/awescholar?style=flat-square" alt="PyPI downloads">
-    <img src="https://img.shields.io/github/stars/mugpeng/awescholar?style=flat-square" alt="GitHub stars">
+    <img src="https://img.shields.io/github/stars/Webioinfo01/awescholar?style=flat-square" alt="GitHub stars">
   </p>
 </div>
 
@@ -25,9 +26,24 @@ A lightweight CLI that automates the paper curation workflow: query Semantic Sch
 
 ## Install
 
+### Direct install
+
 ```bash
-pip install -e .
+pip install awescholar
 ```
+
+### Ask an AI agent to install (two options)
+
+If you are working inside Claude Code, Codex, Cursor, or another coding agent, tell it:
+
+```text
+Read https://github.com/Webioinfo01/awescholar/blob/main/README.ai.md and follow it to install awescholar for this agent.
+```
+
+The agent will offer two paths:
+
+1. **Via aweskill** — installs the skill from GitHub with full management (install, update, projection). Requires Node.js.
+2. **Direct copy** — downloads `SKILL.md` into the agent's skill directory. No extra dependencies beyond Python.
 
 ## Quick Start
 

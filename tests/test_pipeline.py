@@ -5,7 +5,7 @@ import json
 import pytest
 
 from awescholar import pipeline
-from awescholar.schemas import FilteredPaper, FilterResult
+from awescholar.schemas import AnnotationResult, FilteredPaper, FilterResult, PaperAnnotation
 
 
 def test_run_pipeline_auto_merges_filtered_data_when_configured(tmp_path, monkeypatch):
@@ -120,3 +120,28 @@ def test_run_pipeline_uses_same_agent_model_prefixing_as_config(tmp_path, monkey
     )
 
     assert captured["model"] == "openai/glm-5.1"
+
+
+def test_run_annotate_maps_llm_category_to_config_casing(monkeypatch):
+    def fake_complete(**kwargs):
+        return AnnotationResult(
+            paper_list=[
+                PaperAnnotation(
+                    doi="10.1/a",
+                    domain="Agents",
+                    category="ai-agents",
+                )
+            ],
+            category_list=["ai-agents"],
+        )
+
+    monkeypatch.setattr(pipeline, "complete", fake_complete)
+
+    structured = pipeline.run_annotate(
+        papers=[{"doi": "10.1/a", "title": "Paper A", "abstract": ""}],
+        model="openai/test-model",
+        categories=["Foundation Models", "AI Agents", "Databases"],
+    )
+
+    assert list(structured) == ["AI Agents"]
+    assert structured["AI Agents"][0]["category"] == "AI Agents"

@@ -71,6 +71,20 @@ def test_merge_new_creates_new_category():
         assert "Cat B" in result
 
 
+def test_merge_new_reuses_existing_category_with_different_case_and_separator():
+    with tempfile.TemporaryDirectory() as tmp:
+        new = os.path.join(tmp, "new.json")
+        archive = os.path.join(tmp, "archive.json")
+        _write_json(new, {"AI Agents": [{"doi": "10.1/b", "title": "Paper B", "category": "AI Agents"}]})
+        _write_json(archive, {"ai-agents": [{"doi": "10.1/a", "title": "Paper A"}]})
+
+        result = merge_new_to_archive(new, archive)
+
+        assert list(result) == ["ai-agents"]
+        assert [p["doi"] for p in result["ai-agents"]] == ["10.1/a", "10.1/b"]
+        assert result["ai-agents"][1]["category"] == "ai-agents"
+
+
 # ── merge_archive_to_new ─────────────────────────────────────
 
 def test_merge_archive_enriches_new():
@@ -159,6 +173,52 @@ def test_update_readme_no_backup_no_existing_file():
         update_readme(archive, readme, no_backup=True)
 
         assert os.path.exists(readme)
+
+
+def test_update_readme_replaces_only_marker_region():
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {"Models": [{"doi": "10.1/a", "title": "Test Paper", "year": 2025}]})
+        with open(readme, "w", encoding="utf-8") as f:
+            f.write(
+                "# Manual Title\n"
+                "\n"
+                "## Table of Contents\n"
+                "- [Manual](#manual)\n"
+                "\n"
+                "<!-- AWESCHOLAR:START -->\n"
+                "old generated content\n"
+                "<!-- AWESCHOLAR:END -->\n"
+                "\n"
+                "## Citation\n"
+                "Keep this.\n"
+            )
+
+        update_readme(archive, readme, no_backup=True)
+
+        content = open(readme, encoding="utf-8").read()
+        assert "# Manual Title" in content
+        assert "- [Manual](#manual)" in content
+        assert "## Citation\nKeep this." in content
+        assert "old generated content" not in content
+        assert "## Models" in content
+        assert "Test Paper" in content
+
+
+def test_update_readme_existing_file_requires_marker():
+    with tempfile.TemporaryDirectory() as tmp:
+        archive = os.path.join(tmp, "archive.json")
+        readme = os.path.join(tmp, "readme.md")
+        _write_json(archive, {"Models": [{"doi": "10.1/a", "title": "Test Paper", "year": 2025}]})
+        with open(readme, "w", encoding="utf-8") as f:
+            f.write("# Manual Title\n")
+
+        try:
+            update_readme(archive, readme, no_backup=True)
+            assert False, "Expected missing marker error"
+        except RuntimeError as exc:
+            assert "AWESCHOLAR:START" in str(exc)
 
 
 # ── generate_rss ─────────────────────────────────────────────

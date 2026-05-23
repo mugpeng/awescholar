@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="./logo/hero.png" alt="awescholar" width="800">
   <h1>awescholar: Scientific Literature Curator</h1>
   <p><strong>自动化科学文献发现与策展。</strong></p>
   <p>搜索、标注、筛选和报告学术论文 — 并将结果合并到你的 Awesome 列表中。</p>
@@ -15,7 +16,7 @@
     <img src="https://img.shields.io/badge/install-pip-22C55E?style=flat-square" alt="pip install">
     <img src="https://img.shields.io/badge/platform-cli-334155?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/pypi/dm/awescholar?style=flat-square" alt="PyPI downloads">
-    <img src="https://img.shields.io/github/stars/mugpeng/awescholar?style=flat-square" alt="GitHub stars">
+    <img src="https://img.shields.io/github/stars/Webioinfo01/awescholar?style=flat-square" alt="GitHub stars">
   </p>
 </div>
 
@@ -25,9 +26,24 @@
 
 ## 安装
 
+### 直接安装
+
 ```bash
-pip install -e .
+pip install awescholar
 ```
+
+### 让 AI agent 帮你安装（两种方式）
+
+如果你在 Claude Code、Codex、Cursor 等 coding agent 中工作，直接告诉它：
+
+```text
+Read https://github.com/Webioinfo01/awescholar/blob/main/README.ai.md and follow it to install awescholar for this agent.
+```
+
+Agent 会提供两种路径：
+
+1. **通过 aweskill** — 从 GitHub 安装技能，支持完整的技能管理（安装、更新、投影）。需要 Node.js。
+2. **直接复制** — 将 `SKILL.md` 下载到 agent 的技能目录。除 Python 外无需额外依赖。
 
 ## 快速开始
 

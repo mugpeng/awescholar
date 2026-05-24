@@ -5,6 +5,8 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 from awescholar.record import (
     search_and_add,
     _load_flat_json,
@@ -50,22 +52,16 @@ def test_load_flat_json_flattens_dict_format():
 
 # ── _is_duplicate ──────────────────────────────────────────────
 
-def test_is_duplicate_by_title():
-    existing = [{"title": "Paper A", "doi": "10.1/a"}]
-    new = {"title": "Paper A", "doi": "10.1/other"}
-    assert _is_duplicate(existing, new) is True
-
-
-def test_is_duplicate_by_doi():
-    existing = [{"title": "Different Title", "doi": "10.1/a"}]
-    new = {"title": "Paper A", "doi": "10.1/a"}
-    assert _is_duplicate(existing, new) is True
-
-
-def test_is_duplicate_false():
-    existing = [{"title": "Paper A", "doi": "10.1/a"}]
-    new = {"title": "Paper B", "doi": "10.1/b"}
-    assert _is_duplicate(existing, new) is False
+@pytest.mark.parametrize(
+    ("existing", "new", "expected"),
+    [
+        ([{"title": "Paper A", "doi": "10.1/a"}], {"title": "Paper A", "doi": "10.1/other"}, True),
+        ([{"title": "Different Title", "doi": "10.1/a"}], {"title": "Paper A", "doi": "10.1/a"}, True),
+        ([{"title": "Paper A", "doi": "10.1/a"}], {"title": "Paper B", "doi": "10.1/b"}, False),
+    ],
+)
+def test_is_duplicate(existing, new, expected):
+    assert _is_duplicate(existing, new) is expected
 
 
 # ── search_and_add with json_file ──────────────────────────────

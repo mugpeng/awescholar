@@ -214,7 +214,13 @@ def test_update_readme_creates_backup_by_default():
         # Should have exactly one .bak file
         bak_files = [f for f in os.listdir(tmp) if f.startswith("readme.md.") and f.endswith(".bak")]
         assert len(bak_files) == 1
-        assert "2026" in bak_files[0] or "2025" in bak_files[0]  # has timestamp
+        backup_content = open(os.path.join(tmp, bak_files[0]), encoding="utf-8").read()
+        assert backup_content == (
+            "# Old Content\n"
+            "<!-- AWESCHOLAR:START -->\n"
+            "old\n"
+            "<!-- AWESCHOLAR:END -->\n"
+        )
 
 
 def test_update_readme_no_backup_skips_backup():

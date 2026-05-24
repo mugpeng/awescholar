@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.5
+
+Agent install flow, filtering config propagation, licensing metadata, and test maintenance.
+
+### Highlights
+
+- Agent bootstrap docs now install the `awescholar` CLI first, then choose a skill management path (`aweskill` or direct copy)
+- README install sections clarify that `aweskill` and direct copy are two ways to manage the awescholar skill, not two separate CLI install methods
+- Fix: `filter.research_interests` now reaches the normal full `crawler run` filter path
+- Version metadata is kept aligned between package metadata, `__version__`, README badges, and CLI version tests
+- Project license metadata changed to MPL-2.0 and a repository LICENSE file was added
+- Test suite cleanup removes low-value schema tests, parameterizes duplicate detection coverage, and makes README backup assertions time-independent
+- Ruff cleanup removes unused code found during release validation
+
 ## v0.1.4
 
 Marker-based README update, data field normalization, and robust merge/readme/rss handling.

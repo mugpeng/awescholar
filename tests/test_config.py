@@ -1,6 +1,8 @@
 """Tests for CLI config loading."""
 
 import json
+import tomllib
+from pathlib import Path
 
 import pytest
 
@@ -60,4 +62,7 @@ def test_resolve_agent_config_prefixes_agent_model_names():
 
 
 def test_version_constant_matches_package_metadata():
-    assert __version__ == "0.1.3"
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    metadata = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+
+    assert __version__ == metadata["project"]["version"]

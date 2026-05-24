@@ -122,6 +122,45 @@ def test_run_pipeline_uses_same_agent_model_prefixing_as_config(tmp_path, monkey
     assert captured["model"] == "openai/glm-5.1"
 
 
+def test_run_pipeline_passes_research_interests_to_full_filter_path(tmp_path, monkeypatch):
+    captured = {}
+
+    def fake_run_search(**kwargs):
+        return [{"doi": "10.1/a", "title": "Paper A", "abstract": "", "venue": "TestConf"}]
+
+    def fake_run_annotate(**kwargs):
+        return {
+            "Models": [
+                {
+                    "doi": "10.1/a",
+                    "title": "Paper A",
+                    "venue": "TestConf",
+                }
+            ]
+        }
+
+    def fake_run_filter(**kwargs):
+        captured["research_interests"] = kwargs["research_interests"]
+        return kwargs["structured_data"]
+
+    def fake_run_report(**kwargs):
+        return "# Report"
+
+    monkeypatch.setattr(pipeline, "run_search", fake_run_search)
+    monkeypatch.setattr(pipeline, "run_annotate", fake_run_annotate)
+    monkeypatch.setattr(pipeline, "run_filter", fake_run_filter)
+    monkeypatch.setattr(pipeline, "run_report", fake_run_report)
+
+    pipeline.run_pipeline(
+        query="AI agents",
+        model="openai/test-model",
+        db_path=str(tmp_path),
+        research_interests="biology agents",
+    )
+
+    assert captured["research_interests"] == "biology agents"
+
+
 def test_run_annotate_maps_llm_category_to_config_casing(monkeypatch):
     def fake_complete(**kwargs):
         return AnnotationResult(

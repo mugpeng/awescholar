@@ -185,7 +185,6 @@ def _split_sections(content: str) -> tuple:
     sections = {}
     current_key = None
     current_lines = []
-    trailing_lines = []
     in_toc = False
     toc_lines = []
 

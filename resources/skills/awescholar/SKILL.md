@@ -94,7 +94,11 @@ awescholar updater readme --archive docs/data.json --readme readme.md --no-backu
 awescholar updater rss --archive docs/data.json -o docs/rss.xml
 ```
 
-Always run all three steps in order. Skipping RSS means subscribers won't see new papers.
+Decision order:
+1. Review `updater_filter.json` before merging — confirm content is appropriate.
+2. Run merge first (`updater update`). If merge fails, stop and fix before continuing.
+3. Run readme (`updater readme`). If readme fails, the data is already merged — check for marker issues.
+4. Run RSS last (`updater rss`). Skipping RSS means subscribers won't see new papers.
 
 ### Updater Search & Add
 

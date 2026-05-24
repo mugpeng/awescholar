@@ -8,7 +8,7 @@ from typing import Callable
 from . import prompts
 from .categories import canonicalize_category
 from .config import resolve_agent_settings
-from .data_fields import normalize_project_paper_fields, normalize_updater_paper_fields
+from .data_fields import normalize_updater_paper_fields
 from .llm import complete
 from .schemas import AnnotationResult, FilterResult
 from .search import search_papers
@@ -107,7 +107,7 @@ def run_filter(
     structured_data: dict[str, list[dict]],
     model: str,
     limit: int = 20,
-    research_interests: list[str] | None = None,
+    research_interests: str | list[str] | None = None,
     api_key: str | None = None,
     base_url: str | None = None,
     status_cb: StatusCallback = None,
@@ -225,7 +225,7 @@ def run_pipeline(
     merge_new_to_old: bool = False,
     data_json_path: str | None = None,
     model_profiles: dict | None = None,
-    research_interests: list[str] | None = None,
+    research_interests: str | list[str] | None = None,
     status_cb: StatusCallback = None,
 ) -> tuple[dict, str]:
     """Run full pipeline with optional skip/resume controls.
@@ -321,6 +321,7 @@ def run_pipeline(
     m, k, u = resolve_agent_settings(agent_models, "filterer", model, api_key, base_url, model_profiles)
     filtered = run_filter(
         structured_data=structured, model=m, limit=limit_filter,
+        research_interests=research_interests,
         api_key=k, base_url=u, status_cb=cb,
     )
     with open(filtered_path, "w", encoding="utf-8") as f:

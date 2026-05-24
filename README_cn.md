@@ -46,6 +46,10 @@ awescholar 专为 AI agent 自主操作而设计。安装 skill 后，你的 age
 
 Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用命令、配置选项和工作流。
 
+## awescholar 驱动的项目
+
+- **[Awesome AI Meets Biology](https://github.com/Webioinfo01/Awesome-AI-Meets-Biology)** — AI × 生物学论文策展，由 awescholar 驱动自动发现、筛选和 README 更新。
+
 ## 安装
 
 ### 直接安装
@@ -54,7 +58,7 @@ Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用
 pip install awescholar
 ```
 
-### 让 AI agent 帮你安装（两种方式）
+### 让 AI agent 配置 awescholar skill
 
 如果你在 Claude Code、Codex、Cursor 等 coding agent 中工作，直接告诉它：
 
@@ -62,10 +66,10 @@ pip install awescholar
 Read https://github.com/Webioinfo01/awescholar/blob/main/README.ai.md and follow it to install awescholar for this agent.
 ```
 
-Agent 会提供两种路径：
+Agent 会先安装 `awescholar` CLI，然后在下面两种 awescholar skill 管理方式中选择一种：
 
-1. **通过 aweskill** — 从 GitHub 安装技能，支持完整的技能管理（安装、更新、投影）。需要 Node.js。
-2. **直接复制** — 将 `SKILL.md` 下载到 agent 的技能目录。除 Python 外无需额外依赖。
+1. **通过 [aweskill](https://aweskill.webioinfo.top/)** — 从 GitHub 安装和管理 skill，支持更新、投影和备份。需要 Node.js。由 [aweskill](https://aweskill.webioinfo.top/) 驱动 — AI 编程 Agent 的通用 skill 管理器。
+2. **直接复制** — 将 `SKILL.md` 下载到 agent 的 skill 目录。除 Python 外无需额外依赖，但后续更新需要手动重新复制。
 
 ## 快速开始
 

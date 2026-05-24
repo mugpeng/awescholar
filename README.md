@@ -46,6 +46,10 @@ awescholar is designed for AI agents to operate autonomously. Install the skill,
 
 The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understand all available commands, config options, and workflows.
 
+## awescholar 驱动的项目
+
+- **[Awesome AI Meets Biology](https://github.com/Webioinfo01/Awesome-AI-Meets-Biology)** — AI × 生物学论文策展，由 awescholar 驱动自动发现、筛选和 README 更新。
+
 ## Install
 
 ### Direct install
@@ -54,7 +58,7 @@ The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understan
 pip install awescholar
 ```
 
-### Ask an AI agent to install (two options)
+### Ask an AI agent to configure the awescholar skill
 
 If you are working inside Claude Code, Codex, Cursor, or another coding agent, tell it:
 
@@ -62,10 +66,10 @@ If you are working inside Claude Code, Codex, Cursor, or another coding agent, t
 Read https://github.com/Webioinfo01/awescholar/blob/main/README.ai.md and follow it to install awescholar for this agent.
 ```
 
-The agent will offer two paths:
+The agent will first install the `awescholar` CLI, then choose one of two awescholar skill management options:
 
-1. **Via aweskill** — installs the skill from GitHub with full management (install, update, projection). Requires Node.js.
-2. **Direct copy** — downloads `SKILL.md` into the agent's skill directory. No extra dependencies beyond Python.
+1. **Via [aweskill](https://aweskill.webioinfo.top/)** — installs and manages the skill from GitHub with update, projection, and backup support. Requires Node.js. Powered by [aweskill](https://aweskill.webioinfo.top/) — the universal skill manager for AI coding agents.
+2. **Direct copy** — downloads `SKILL.md` into the agent's skill directory. No extra dependencies beyond Python, but future updates require copying the file again manually.
 
 ## Quick Start
 

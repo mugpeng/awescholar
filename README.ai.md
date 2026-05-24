@@ -1,6 +1,6 @@
 # awescholar Bootstrap Protocol
 
-This document is for AI coding agents. Choose one of two options below to make the awescholar skill available to the current agent.
+This document is for AI coding agents. First install the `awescholar` CLI, then choose one of two ways to manage the awescholar skill for the current agent.
 
 ## Language Behavior
 
@@ -8,47 +8,24 @@ This document is for AI coding agents. Choose one of two options below to make t
 - If the user asks in Chinese, continue in Chinese.
 - If the user asks in English, continue in English.
 
-## Option A: Via aweskill (recommended if aweskill is available)
-
-Use this option if the user already has aweskill installed, or is willing to install it. This gives full skill management — install, update, projection, backup.
+## Step 1: Install awescholar CLI
 
 ### Prerequisites
 
 - Python >= 3.10 (`python3 --version`)
 - pip available (`pip --version`)
-- Node.js >= 20 (`node --version`) — required by aweskill
-- npm available (`npm --version`)
 
 If Python is missing, tell the user to install it from https://www.python.org/.
-If Node.js is missing, tell the user to install it from https://nodejs.org/.
 
 ### Steps
 
-#### A1. Install aweskill (if not already installed)
-
-```bash
-npm install -g aweskill
-```
-
-#### A2. Initialize the aweskill central store (if not already done)
-
-```bash
-aweskill store init
-```
-
-#### A3. Install awescholar skill from GitHub
-
-```bash
-aweskill install Webioinfo01/awescholar
-```
-
-#### A4. Install awescholar Python package
+#### 1. Install awescholar Python package
 
 ```bash
 pip install awescholar
 ```
 
-#### A5. Verify awescholar CLI
+#### 2. Verify awescholar CLI
 
 ```bash
 awescholar -v
@@ -56,7 +33,44 @@ awescholar -v
 
 Expected output: `awescholar X.Y.Z`
 
-#### A6. Identify the current agent
+---
+
+## Step 2: Install or manage the awescholar skill
+
+Choose one of the following skill management options. Both options assume the `awescholar` CLI was installed in Step 1.
+
+### Option A: Via aweskill (recommended if aweskill is available)
+
+Use this option if the user already has aweskill installed, or is willing to install it. This gives full skill management — install, update, projection, backup.
+
+#### Prerequisites
+
+- Node.js >= 20 (`node --version`) — required by aweskill
+- npm available (`npm --version`)
+
+If Node.js is missing, tell the user to install it from https://nodejs.org/.
+
+#### Steps
+
+##### A1. Install aweskill (if not already installed)
+
+```bash
+npm install -g aweskill
+```
+
+##### A2. Initialize the aweskill central store (if not already done)
+
+```bash
+aweskill store init
+```
+
+##### A3. Install awescholar skill from GitHub
+
+```bash
+aweskill install Webioinfo01/awescholar
+```
+
+##### A4. Identify the current agent
 
 ```bash
 aweskill agent supported
@@ -66,13 +80,13 @@ Look for lines marked with `✓`. Common agent ids: `claude-code`, `cursor`, `co
 
 If you cannot determine the agent id, ask the user.
 
-#### A7. Project awescholar skill to this agent
+##### A5. Project awescholar skill to this agent
 
 ```bash
 aweskill agent add skill awescholar --global --agent <agent-id>
 ```
 
-#### A8. Verify
+##### A6. Verify
 
 ```bash
 aweskill agent list --global --agent <agent-id>
@@ -82,33 +96,17 @@ Expected: `awescholar` shows as `linked`.
 
 ---
 
-## Option B: Direct copy (no aweskill needed)
+### Option B: Direct copy (no aweskill needed)
 
 Use this option if the user does not have aweskill and does not want to install Node.js. This copies the SKILL.md file directly into the agent's skill directory.
 
-### Prerequisites
+#### Prerequisites
 
-- Python >= 3.10 (`python3 --version`)
-- pip available (`pip --version`)
 - `curl` or `wget` available
 
-### Steps
+#### Steps
 
-#### B1. Install awescholar Python package
-
-```bash
-pip install awescholar
-```
-
-#### B2. Verify awescholar CLI
-
-```bash
-awescholar -v
-```
-
-Expected output: `awescholar X.Y.Z`
-
-#### B3. Identify the current agent's skill directory
+##### B1. Identify the current agent's skill directory
 
 Determine which agent is running and its global skill directory:
 
@@ -124,14 +122,14 @@ Determine which agent is running and its global skill directory:
 
 If the agent is not in this list, ask the user where to place the skill file.
 
-#### B4. Download and place SKILL.md
+##### B2. Download and place SKILL.md
 
 ```bash
 mkdir -p <skill-directory>
 curl -fsSL https://raw.githubusercontent.com/Webioinfo01/awescholar/main/resources/skills/awescholar/SKILL.md -o <skill-directory>/SKILL.md
 ```
 
-Replace `<skill-directory>` with the path from step B3.
+Replace `<skill-directory>` with the path from step B1.
 
 ---
 

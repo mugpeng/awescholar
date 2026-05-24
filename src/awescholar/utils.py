@@ -7,7 +7,7 @@ import shutil
 import html
 from datetime import datetime
 
-from .categories import canonicalize_category, find_matching_category
+from .categories import canonicalize_category, find_matching_category, normalize_category_name
 from .data_fields import first_present, merge_preserving_nonempty, normalize_project_paper_fields
 
 README_START_MARKER = "<!-- AWESCHOLAR:START -->"
@@ -145,6 +145,80 @@ def _format_code_product(code_url: str, github_stars: str) -> str:
     return " ".join(parts)
 
 
+def _parse_existing_sections(content: str) -> dict:
+    """Parse existing section headers and their boundaries from content.
+
+    Returns {normalized_name: original_header_line} for each ## section.
+    """
+    sections = {}
+    for line in content.splitlines():
+        if line.startswith("## "):
+            key = normalize_category_name(line[3:].strip())
+            if key:
+                sections[key] = line
+    return sections
+
+
+def _parse_existing_toc(content: str) -> list:
+    """Extract existing TOC lines from content (lines starting with '- [')."""
+    toc = []
+    in_toc = False
+    for line in content.splitlines():
+        if line.startswith("## "):
+            if in_toc:
+                break
+            if "table of contents" in line.lower():
+                in_toc = True
+                continue
+        elif in_toc and line.startswith("- ["):
+            toc.append(line)
+    return toc
+
+
+def _split_sections(content: str) -> tuple:
+    """Split content into (toc_block, section_blocks, trailing).
+
+    Returns (toc_text, {normalized_name: section_text}, trailing_text_after_last_section).
+    """
+    lines = content.splitlines(keepends=True)
+    toc_block = ""
+    sections = {}
+    current_key = None
+    current_lines = []
+    trailing_lines = []
+    in_toc = False
+    toc_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            header_text = stripped[3:].strip()
+            if "table of contents" in header_text.lower():
+                in_toc = True
+                continue
+            # Save previous section
+            if current_key is not None:
+                sections[current_key] = "".join(current_lines)
+            elif in_toc:
+                toc_block = "".join(toc_lines)
+                in_toc = False
+            current_key = normalize_category_name(header_text)
+            current_lines = [line]
+        elif in_toc:
+            toc_lines.append(line)
+        elif current_key is not None:
+            current_lines.append(line)
+        # Lines before TOC or between TOC and first section are ignored
+        # (they're in the before/after parts of the marker split)
+
+    if current_key is not None:
+        sections[current_key] = "".join(current_lines)
+    if in_toc:
+        toc_block = "".join(toc_lines)
+
+    return toc_block, sections
+
+
 def update_readme(
     archive_path: str,
     readme_path: str,
@@ -156,65 +230,50 @@ def update_readme(
 ):
     """Generate/update README.md tables from archive JSON.
 
-    Reads the archive, generates markdown tables for each category,
-    and writes/updates the README preserving any manual header content.
+    Preserves existing TOC entries and section headers (including emojis,
+    custom names, custom anchors). Only updates table rows for existing
+    categories and appends new categories at the end.
     """
     with open(archive_path, "r", encoding="utf-8") as f:
         archive = json.load(f)
 
     archive = _canonical_archive_sections(archive)
-    toc_lines = []
-    table_sections = []
 
-    for category, papers in archive.items():
-        if not papers:
-            continue
+    def _sort_year(p):
+        y = p.get("year") or ""
+        if isinstance(y, str):
+            return y
+        return str(y)
 
-        toc_lines.append(f"- [{category}](#{_format_anchor(category)})")
-
-        # Sort by year descending
-        def _sort_year(p):
-            y = p.get("year") or ""
-            if isinstance(y, str):
-                return y
-            return str(y)
+    def _make_table_rows(papers):
+        """Generate only the table header + rows (no ## heading)."""
         sorted_papers = sorted(papers, key=_sort_year, reverse=True)
-
-        lines = [f"## {category}"]
-        lines.append("")
-        lines.append("| Year | Title | Team | Team Website | Affiliation | Domain | Venue | Paper/ Source | Code/Product |")
-        lines.append("| -----| ------| -----| -------------| ------------| -------| ------| --------------| -------------|")
-
+        lines = [
+            "| Year | Title | Team | Team Website | Affiliation | Domain | Venue | Paper/ Source | Code/Product |",
+            "| -----| ------| -----| -------------| ------------| -------| ------| --------------| -------------|",
+        ]
         for p in sorted_papers:
             year = p.get("year") or p.get("publication_date", "")
             if isinstance(year, str) and len(year) >= 7:
-                year = year[:7]  # YYYY-MM
-
+                year = year[:7]
             title = _escape_md(p.get("title", ""))
             team = _escape_md(p.get("team", ""))
             team_website = _format_link(first_present(p, "team website", "team_website"))
             affiliation = _escape_md(p.get("affiliation", ""))
             domain = _escape_md(p.get("domain", ""))
             venue = _escape_md(p.get("venue", ""))
-
             doi = p.get("doi", "")
             paper_url = first_present(p, "paperUrl", "paper_url", "url")
             if not paper_url and doi:
                 paper_url = f"https://doi.org/{doi}"
             paper_link = _format_link(paper_url)
-
             code_url = first_present(p, "codeUrl", "code_url")
             github_stars = first_present(p, "githubStars", "github_stars")
             code_link = _format_code_product(code_url, github_stars)
-
             lines.append(
                 f"| {year} | **{title}** | {team} | {team_website} | {affiliation} | {domain} | {venue} | {paper_link} | {code_link} |"
             )
-
-        table_sections.append("\n".join(lines))
-
-    generated_parts = [*table_sections]
-    generated_content = "\n\n".join(generated_parts).strip() + "\n"
+        return "\n".join(lines)
 
     if os.path.exists(readme_path):
         with open(readme_path, "r", encoding="utf-8") as f:
@@ -224,7 +283,46 @@ def update_readme(
                 f"README update requires {README_START_MARKER} and {README_END_MARKER} markers."
             )
         before, rest = existing_content.split(README_START_MARKER, 1)
-        _, after = rest.split(README_END_MARKER, 1)
+        inner, after = rest.split(README_END_MARKER, 1)
+
+        # Parse existing TOC and sections from the inner content
+        existing_toc = _parse_existing_toc(inner)
+        _, existing_sections = _split_sections(inner)
+
+        # Build new content: preserve existing sections, update tables
+        new_toc = list(existing_toc)  # start with existing TOC
+        existing_toc_anchors = set()
+        for t in existing_toc:
+            m = re.search(r"#([^\)]+)", t)
+            if m:
+                existing_toc_anchors.add(m.group(1).lower())
+
+        section_parts = []
+        new_categories = []
+
+        for category, papers in archive.items():
+            if not papers:
+                continue
+            norm = normalize_category_name(category)
+            if norm in existing_sections:
+                # Preserve existing section header, update table rows
+                existing_block = existing_sections[norm]
+                header_line = existing_block.splitlines()[0] if existing_block.splitlines() else f"## {category}"
+                table_rows = _make_table_rows(papers)
+                section_parts.append(f"{header_line}\n\n{table_rows}")
+            else:
+                # New category
+                table_rows = _make_table_rows(papers)
+                section_parts.append(f"## {category}\n\n{table_rows}")
+                anchor = _format_anchor(category)
+                if anchor.lower() not in existing_toc_anchors:
+                    new_categories.append(f"- [{category}](#{anchor})")
+
+        # Append new TOC entries before the first section
+        all_toc = new_toc + new_categories
+        toc_block = "\n".join(all_toc)
+        generated_content = toc_block + "\n\n" + "\n\n".join(section_parts) + "\n"
+
         content = (
             f"{before}{README_START_MARKER}\n"
             f"{generated_content}"
@@ -283,7 +381,32 @@ def generate_rss(
     description: str = "Latest papers from curated collection",
     rss_url: str = "",
 ):
-    """Generate RSS feed from archive JSON."""
+    """Generate RSS feed from archive JSON.
+
+    If the output file already exists, preserves its channel metadata
+    (title, link, description, atom:link) unless explicitly overridden.
+    """
+    # Preserve existing metadata when regenerating
+    if os.path.exists(output_path):
+        with open(output_path, "r", encoding="utf-8") as f:
+            existing = f.read()
+        if title == "Awesome Scholar Updates":
+            m = re.search(r"<title>(.*?)</title>", existing)
+            if m:
+                title = m.group(1)
+        if not link:
+            m = re.search(r"<link>(.*?)</link>", existing)
+            if m:
+                link = m.group(1)
+        if description == "Latest papers from curated collection":
+            m = re.search(r"<description>(.*?)</description>", existing, re.DOTALL)
+            if m:
+                description = m.group(1).strip()
+        if not rss_url:
+            m = re.search(r'<atom:link href="(.*?)"', existing)
+            if m:
+                rss_url = m.group(1)
+
     with open(archive_path, "r", encoding="utf-8") as f:
         archive = json.load(f)
 
@@ -339,7 +462,7 @@ def generate_rss(
   <description>{html.escape(description)}</description>
   <language>en-us</language>
   <lastBuildDate>{now}</lastBuildDate>{atom_link}
-{"".join(items)}
+{chr(10).join(items)}
 </channel>
 </rss>"""
 

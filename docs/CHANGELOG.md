@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.4
+
+Marker-based README update, data field normalization, and robust merge/readme/rss handling.
+
+### Highlights
+
+- Marker-based README update — `updater readme` now only modifies content between `<!-- AWESCHOLAR:START -->` and `<!-- AWESCHOLAR:END -->`, preserving custom headings, citations, and project text outside that region
+- Category normalization — new `categories.py` module for consistent category mapping across pipeline
+- Data field normalization (`data_fields.py`) — normalize project data fields and preserve code/product links during merge
+- Robust merge/readme/rss — handle missing DOI, mixed year types, and normalized fields without crashing
+- Preserve existing README TOC and headers on update
+- Hero image and AI agent install guide added to README
+- Expanded SKILL.md with full workflow diagrams and command reference
+
 ## v0.1.3
 
 Config module extraction, auto-merge pipeline, and filter limit fix.

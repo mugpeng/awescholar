@@ -285,20 +285,12 @@ def update_readme(
         before, rest = existing_content.split(README_START_MARKER, 1)
         inner, after = rest.split(README_END_MARKER, 1)
 
-        # Parse existing TOC and sections from the inner content
-        existing_toc = _parse_existing_toc(inner)
+        # Parse existing sections from the inner content (between markers)
         _, existing_sections = _split_sections(inner)
 
         # Build new content: preserve existing sections, update tables
-        new_toc = list(existing_toc)  # start with existing TOC
-        existing_toc_anchors = set()
-        for t in existing_toc:
-            m = re.search(r"#([^\)]+)", t)
-            if m:
-                existing_toc_anchors.add(m.group(1).lower())
-
         section_parts = []
-        new_categories = []
+        new_toc_entries = []
 
         for category, papers in archive.items():
             if not papers:
@@ -311,17 +303,26 @@ def update_readme(
                 table_rows = _make_table_rows(papers)
                 section_parts.append(f"{header_line}\n\n{table_rows}")
             else:
-                # New category
+                # New category — generate section and TOC entry
                 table_rows = _make_table_rows(papers)
                 section_parts.append(f"## {category}\n\n{table_rows}")
                 anchor = _format_anchor(category)
-                if anchor.lower() not in existing_toc_anchors:
-                    new_categories.append(f"- [{category}](#{anchor})")
+                new_toc_entries.append(f"- [{category}](#{anchor})")
 
-        # Append new TOC entries before the first section
-        all_toc = new_toc + new_categories
-        toc_block = "\n".join(all_toc)
-        generated_content = toc_block + "\n\n" + "\n\n".join(section_parts) + "\n"
+        generated_content = "\n\n".join(section_parts) + "\n"
+
+        # Append new TOC entries to the TOC in the 'before' part
+        if new_toc_entries:
+            before_lines = before.rstrip("\n").split("\n")
+            # Find last TOC line (starts with '- [') and insert after it
+            last_toc_idx = -1
+            for i, line in enumerate(before_lines):
+                if line.strip().startswith("- ["):
+                    last_toc_idx = i
+            if last_toc_idx >= 0:
+                for entry in reversed(new_toc_entries):
+                    before_lines.insert(last_toc_idx + 1, entry)
+                before = "\n".join(before_lines) + "\n"
 
         content = (
             f"{before}{README_START_MARKER}\n"

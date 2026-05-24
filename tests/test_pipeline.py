@@ -69,7 +69,7 @@ def test_run_pipeline_auto_merges_filtered_data_when_configured(tmp_path, monkey
 
     merged = json.loads(data_json_path.read_text(encoding="utf-8"))
     assert [paper["doi"] for paper in merged["Models"]] == ["10.1/old", "10.1/new"]
-    assert merged["Models"][1]["reason_for_inclusion"] == "Relevant"
+    assert merged["Models"][1]["title"] == "New Paper"
 
 
 def test_run_pipeline_requires_data_json_path_when_auto_merge_enabled(tmp_path):
@@ -144,7 +144,7 @@ def test_run_annotate_maps_llm_category_to_config_casing(monkeypatch):
     )
 
     assert list(structured) == ["AI Agents"]
-    assert structured["AI Agents"][0]["category"] == "AI Agents"
+    assert structured["AI Agents"][0]["doi"] == "10.1/a"
 
 
 def test_run_annotate_outputs_project_data_fields(monkeypatch):

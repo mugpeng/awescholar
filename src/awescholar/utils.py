@@ -330,10 +330,27 @@ def update_readme(
             f"{README_END_MARKER}{after}"
         )
     else:
+        # New readme: generate TOC + table sections
+        toc_lines = []
+        section_parts = []
+        for category, papers in archive.items():
+            if not papers:
+                continue
+            toc_lines.append(f"- [{category}](#{_format_anchor(category)})")
+            table_rows = _make_table_rows(papers)
+            section_parts.append(f"## {category}\n\n{table_rows}")
+
+        toc_block = "\n".join(toc_lines)
+        generated_content = "\n\n".join(section_parts) + "\n"
+
         parts = [f"# {project_title}"]
         if project_description:
             parts.append(f"\n{project_description}")
         parts.append("")
+        if toc_lines:
+            parts.append("## Table of Contents")
+            parts.append(toc_block)
+            parts.append("")
         parts.append(README_START_MARKER)
         parts.append(generated_content.rstrip())
         parts.append(README_END_MARKER)

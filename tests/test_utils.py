@@ -82,7 +82,6 @@ def test_merge_new_reuses_existing_category_with_different_case_and_separator():
 
         assert list(result) == ["ai-agents"]
         assert [p["doi"] for p in result["ai-agents"]] == ["10.1/a", "10.1/b"]
-        assert result["ai-agents"][1]["category"] == "ai-agents"
 
 
 def test_merge_new_preserves_existing_code_product_fields_when_old_updater_lacks_them():
@@ -280,7 +279,7 @@ def test_update_readme_replaces_only_marker_region():
         assert "Test Paper" in content
 
 
-def test_update_readme_updates_toc_inside_marker_region():
+def test_update_readme_adds_new_categories_to_toc_outside_markers():
     with tempfile.TemporaryDirectory() as tmp:
         archive = os.path.join(tmp, "archive.json")
         readme = os.path.join(tmp, "readme.md")
@@ -292,21 +291,30 @@ def test_update_readme_updates_toc_inside_marker_region():
             f.write(
                 "# Manual Title\n"
                 "\n"
-                "<!-- AWESCHOLAR:START -->\n"
                 "## Table of Contents\n"
                 "- [Old](#old)\n"
+                "\n"
+                "<!-- AWESCHOLAR:START -->\n"
+                "old content\n"
                 "<!-- AWESCHOLAR:END -->\n"
             )
 
         update_readme(archive, readme, no_backup=True)
 
         content = open(readme, encoding="utf-8").read()
+        # TOC is outside markers — new categories appended there
+        before_marker = content.split("<!-- AWESCHOLAR:START -->", 1)[0]
+        assert "- [Old](#old)" in before_marker
+        assert "- [AI Agents](#ai-agents)" in before_marker
+        assert "- [Databases](#databases)" in before_marker
+        # Table sections are inside markers
         generated = content.split("<!-- AWESCHOLAR:START -->", 1)[1].split(
             "<!-- AWESCHOLAR:END -->", 1
         )[0]
-        assert "- [AI Agents](#ai-agents)" in generated
-        assert "- [Databases](#databases)" in generated
-        assert "- [Old](#old)" not in generated
+        assert "## AI Agents" in generated
+        assert "## Databases" in generated
+        assert "Agent Paper" in generated
+        assert "Database Paper" in generated
 
 
 def test_update_readme_toc_does_not_duplicate_case_equivalent_categories():

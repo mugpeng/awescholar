@@ -23,7 +23,10 @@ src/awescholar/
   prompts.py        # System prompt strings
   schemas.py        # Pydantic models for annotation and filtering
   db.py             # SQLAlchemy ORM (Paper model) and session factory
-  utils.py          # Merge, README generation, RSS generation
+  utils.py          # Re-export facade (imports from archive, readme, rss)
+  archive.py        # Archive merge operations (new2old, old2new)
+  readme.py         # README generation and update
+  rss.py            # RSS feed generation
 tests/
   test_db.py        # DB and Paper model tests
   test_schemas.py   # Pydantic schema tests
@@ -34,14 +37,14 @@ Separation: `cli.py` handles I/O and config. `pipeline.py` orchestrates steps. O
 
 ## Architecture
 
-**4-step pipeline** — each step is a pure function that takes input and returns output:
+**4-step pipeline** — each step takes input and returns output. Search writes to SQLite; Annotate, Filter, and Report call LLMs. The transformation logic within each step is functional, but the steps themselves have side effects (DB writes, API calls, file I/O):
 
 1. **Search** — Query Semantic Scholar API, deduplicate against SQLite DB
 2. **Annotate** — LLM classifies papers by domain and category
 3. **Filter** — LLM selects top N papers by quality and relevance
 4. **Report** — LLM generates a Markdown summary
 
-Steps are composable. Run the full pipeline with `awescholar run` or individual steps.
+Steps are composable. Run the full pipeline with `awescholar crawler run` or individual steps.
 
 **Data flow**: Each step reads/writes JSON files (`updater.json`, `updater_filter.json`, `report.md`). Re-run any step independently.
 
@@ -76,7 +79,7 @@ Top-level keys: `model_profiles`, `model`, `agent_models`, `semantic_scholar`, `
 ## Code Style
 
 - Functional over OOP — no classes except SQLAlchemy models and Pydantic schemas
-- Functions are pure where possible; side effects (I/O, API calls) are isolated
+- Pure transformation logic (category normalization, field normalization, JSON merge) is separated from side-effectful orchestration (DB writes, LLM calls, file I/O)
 - Error messages are user-facing and actionable
 - Imports: stdlib first, blank line, then third-party
 

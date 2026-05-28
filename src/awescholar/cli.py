@@ -4,17 +4,10 @@ import argparse
 import json
 import os
 import sys
-from datetime import date, datetime
 
 from . import __version__
+from .archive import DateEncoder
 from .config import load_config, resolve_agent_config
-
-
-class _DateEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, (date, datetime)):
-            return o.isoformat()
-        return super().default(o)
 
 def get_version() -> str:
     return __version__
@@ -73,7 +66,7 @@ def cmd_annotate(args: argparse.Namespace, config: dict) -> int | None:
     out_path = os.path.join(config["db_path"], "updater.json")
     os.makedirs(config["db_path"], exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(structured, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
+        json.dump(structured, f, indent=2, ensure_ascii=False, cls=DateEncoder)
     print(f"\nSaved annotated data to {out_path}")
 
 
@@ -98,7 +91,7 @@ def cmd_filter(args: argparse.Namespace, config: dict) -> int | None:
 
     out_path = os.path.join(config["db_path"], "updater_filter.json")
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
+        json.dump(filtered, f, indent=2, ensure_ascii=False, cls=DateEncoder)
     print(f"\nSaved filtered data to {out_path}")
 
 
@@ -169,7 +162,7 @@ def cmd_run(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_update(args: argparse.Namespace, config: dict) -> int | None:
-    from .utils import merge_archive_to_new, merge_new_to_archive
+    from .archive import merge_archive_to_new, merge_new_to_archive
 
     new_path = args.input or os.path.join(config["db_path"], "updater_filter.json")
     if not os.path.exists(new_path):
@@ -185,7 +178,7 @@ def cmd_update(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_readme(args: argparse.Namespace, config: dict) -> int | None:
-    from .utils import discover_readme_targets, update_readme
+    from .readme import discover_readme_targets, update_readme
 
     if args.readme:
         targets = [args.readme]
@@ -205,7 +198,7 @@ def cmd_readme(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_rss(args: argparse.Namespace, config: dict) -> int | None:
-    from .utils import generate_rss
+    from .rss import generate_rss
 
     output = args.output or "rss.xml"
     generate_rss(

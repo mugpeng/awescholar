@@ -1,24 +1,18 @@
 """Core pipeline: search -> annotate -> filter -> report."""
 
+import html
 import json
 import os
-from datetime import date, datetime
 from typing import Callable
 
 from . import prompts
+from .archive import DateEncoder
 from .categories import canonicalize_category
 from .config import resolve_agent_settings
 from .data_fields import normalize_updater_paper_fields
 from .llm import complete
 from .schemas import AnnotationResult, FilterResult
 from .search import search_papers
-
-
-class _DateEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, (date, datetime)):
-            return o.isoformat()
-        return super().default(o)
 
 StatusCallback = Callable[[str], None] | None
 
@@ -67,8 +61,8 @@ def run_annotate(
     cat_str = json.dumps(categories) if categories else "[]"
     papers_xml = "<papers>\n"
     for p in papers:
-        abstract_part = f"\n  <abstract>{p.get('abstract', '')}</abstract>" if include_abstracts else ""
-        papers_xml += f"<paper>\n  <doi>{p['doi']}</doi>\n  <title>{p['title']}</title>{abstract_part}\n</paper>\n"
+        abstract_part = f"\n  <abstract>{html.escape(p.get('abstract', '') or '')}</abstract>" if include_abstracts else ""
+        papers_xml += f"<paper>\n  <doi>{html.escape(p['doi'])}</doi>\n  <title>{html.escape(p['title'])}</title>{abstract_part}\n</paper>\n"
     papers_xml += f"</papers>\n<predefined_category_list>\n{cat_str}\n</predefined_category_list>"
 
     max_retries = 3
@@ -129,7 +123,7 @@ def run_filter(
 
     result = complete(
         model=model, system=prompts.FILTER,
-        user=json.dumps(user_payload, indent=2, cls=_DateEncoder),
+        user=json.dumps(user_payload, indent=2, cls=DateEncoder),
         response_format=FilterResult, api_key=api_key, base_url=base_url,
     )
     if isinstance(result, str):
@@ -176,7 +170,7 @@ def run_report(
 
     result = complete(
         model=model, system=prompts.REPORTER.replace("{date_range}", date_range),
-        user=json.dumps(filtered_data, indent=2, ensure_ascii=False, cls=_DateEncoder),
+        user=json.dumps(filtered_data, indent=2, ensure_ascii=False, cls=DateEncoder),
         api_key=api_key, base_url=base_url,
     )
     cb("Report generated.")
@@ -194,7 +188,7 @@ def _merge_filtered_to_data(
     if not data_json_path:
         raise RuntimeError("pipeline.data_json_path is required when pipeline.merge_new_to_old is true")
 
-    from .utils import merge_new_to_archive
+    from .archive import merge_new_to_archive
 
     parent = os.path.dirname(data_json_path)
     if parent:
@@ -270,7 +264,7 @@ def run_pipeline(
             api_key=k, base_url=u, status_cb=cb,
         )
         with open(filtered_path, "w", encoding="utf-8") as f:
-            json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
+            json.dump(filtered, f, indent=2, ensure_ascii=False, cls=DateEncoder)
         cb(f"Saved filtered data to {filtered_path}")
         _merge_filtered_to_data(filtered_path, data_json_path, merge_new_to_old, cb)
         m, k, u = resolve_agent_settings(agent_models, "reporter", model, api_key, base_url, model_profiles)
@@ -314,7 +308,7 @@ def run_pipeline(
         include_abstracts=include_abstracts, api_key=k, base_url=u, status_cb=cb,
     )
     with open(updater_path, "w", encoding="utf-8") as f:
-        json.dump(structured, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
+        json.dump(structured, f, indent=2, ensure_ascii=False, cls=DateEncoder)
     cb(f"Saved annotated data to {updater_path}")
 
     # --- Filter phase ---
@@ -325,7 +319,7 @@ def run_pipeline(
         api_key=k, base_url=u, status_cb=cb,
     )
     with open(filtered_path, "w", encoding="utf-8") as f:
-        json.dump(filtered, f, indent=2, ensure_ascii=False, cls=_DateEncoder)
+        json.dump(filtered, f, indent=2, ensure_ascii=False, cls=DateEncoder)
     cb(f"Saved filtered data to {filtered_path}")
     _merge_filtered_to_data(filtered_path, data_json_path, merge_new_to_old, cb)
 

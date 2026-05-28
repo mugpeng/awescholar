@@ -25,51 +25,6 @@
 
 A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained project data JSON. Designed for both human and AI-agent operation — install the skill, and your coding agent can run the entire pipeline from natural-language requests.
 
-## Usage
-
-### AI Agent
-
-Install the awescholar skill (see [Install](#install) below), then just tell your agent what to do — no manual CLI steps needed.
-
-**What an AI agent can do:**
-
-- Run the full discovery pipeline: search, annotate, filter, report — in one command
-- Merge new results into the project data JSON and regenerate the README
-- Search Semantic Scholar by title or DOI and add papers to the archive
-- Generate RSS feeds for curated collections
-- Re-run any pipeline step independently with custom input
-
-**Example requests:**
-
-> "Search for recent papers about AI agents in biology, filter the top 20, and update the README."
-
-> "Run the awescholar pipeline with my config, then merge the results into docs/data.json."
-
-> "Find this paper by DOI and add it to the project data JSON."
-
-The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understand all available commands, config options, and workflows.
-
-### Human
-
-Run awescholar directly from the terminal. The typical workflow:
-
-```bash
-# Set API keys
-export GLM_API_KEY="sk-..."
-export SEMANTICSCHOLAR_API_KEY="your-key"   # optional
-
-# Run the full pipeline
-awescholar --config config.json crawler run
-
-# Or step by step
-awescholar crawler search "AI agent|LLM"
-awescholar crawler annotate
-awescholar crawler filter --limit 20
-awescholar crawler report
-```
-
-See [Commands](#commands) below for the full CLI reference.
-
 ## Powered by awescholar
 
 - **[Awesome AI Meets Biology](https://github.com/Webioinfo01/Awesome-AI-Meets-Biology)** — AI x biology paper curation powered by awescholar for automated discovery, filtering, and README updates.
@@ -93,22 +48,6 @@ The agent will first install the `awescholar` CLI, then choose one of two awesch
 
 ```bash
 pip install awescholar
-```
-
-## Quick Start
-
-```bash
-# Set API keys (add to ~/.zshrc or ~/.bashrc to persist)
-export GLM_API_KEY="sk-..."
-export SEMANTICSCHOLAR_API_KEY="your-key"   # optional, without it uses free tier
-
-# Edit config.json to set model name, base_url, search query, etc.
-
-# Run the full pipeline
-awescholar --config config.json crawler run
-
-# Or pass query directly
-awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
 ```
 
 ## Config
@@ -190,6 +129,46 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 **`search.query`** — if set, `crawler run` can be called without a CLI query argument.
 
 Supported LLM providers: any OpenAI-compatible API via `base_url` (e.g. GLM, DeepSeek, Gemini, Mistral, local endpoints).
+
+## Usage
+
+### AI Agent
+
+Install the awescholar skill (see [Install](#install)), then just tell your agent what to do — no manual CLI steps needed.
+
+**What an AI agent can do:**
+
+- Run the full discovery pipeline: search, annotate, filter, report — in one command
+- Merge new results into the project data JSON and regenerate the README
+- Search Semantic Scholar by title or DOI and add papers to the archive
+- Generate RSS feeds for curated collections
+- Re-run any pipeline step independently with custom input
+
+**Example requests:**
+
+> "Search for recent papers about AI agents in biology, filter the top 20, and update the README."
+
+> "Run the awescholar pipeline with my config, then merge the results into docs/data.json."
+
+> "Find this paper by DOI and add it to the project data JSON."
+
+The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understand all available commands, config options, and workflows.
+
+### Human
+
+```bash
+# Set API keys (add to ~/.zshrc or ~/.bashrc to persist)
+export GLM_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # optional, without it uses free tier
+
+# Run the full pipeline
+awescholar --config config.json crawler run
+
+# Or pass query directly
+awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+```
+
+See [Commands](#commands) below for the full CLI reference.
 
 ## Commands
 

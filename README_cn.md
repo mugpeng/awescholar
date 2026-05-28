@@ -25,51 +25,6 @@
 
 一个轻量级 CLI 工具，自动化论文策展工作流：查询 Semantic Scholar、用 LLM 标注、按质量筛选、生成 Markdown 报告，并增量合并到长期维护的项目数据 JSON。同时支持人类和 AI agent 操作 — 安装 skill 后，你的 coding agent 可以通过自然语言指令执行完整流水线。
 
-## 使用
-
-### AI Agent
-
-安装 awescholar skill（见下方[安装](#安装)），然后直接告诉你的 agent 做什么 — 无需手动操作 CLI。
-
-**AI agent 能做什么：**
-
-- 一键执行完整发现流水线：搜索、标注、筛选、报告
-- 将新结果合并到项目数据 JSON 并重新生成 README
-- 按标题或 DOI 搜索 Semantic Scholar 并添加论文到存档
-- 为策展集合生成 RSS 订阅
-- 独立重新运行任意流水线步骤，支持自定义输入
-
-**你可以这样告诉你的 agent：**
-
-> "搜索最近关于 AI agents in biology 的论文，筛选 top 20，更新 README。"
-
-> "用我的 config 跑 awescholar 流水线，然后把结果合并到 docs/data.json。"
-
-> "按 DOI 找到这篇论文，添加到项目数据 JSON 里。"
-
-Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用命令、配置选项和工作流。
-
-### 人类使用
-
-直接在终端运行 awescholar。典型工作流：
-
-```bash
-# 设置 API key
-export GLM_API_KEY="sk-..."
-export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选
-
-# 运行完整流水线
-awescholar --config config.json crawler run
-
-# 或分步执行
-awescholar crawler search "AI agent|LLM"
-awescholar crawler annotate
-awescholar crawler filter --limit 20
-awescholar crawler report
-```
-
-完整命令参考见下方[命令](#命令)。
-
 ## awescholar 驱动的项目
 
 - **[Awesome AI Meets Biology](https://github.com/Webioinfo01/Awesome-AI-Meets-Biology)** — AI × 生物学论文策展，由 awescholar 驱动自动发现、筛选和 README 更新。
@@ -93,22 +48,6 @@ Agent 会先安装 `awescholar` CLI，然后在下面两种 awescholar skill 管
 
 ```bash
 pip install awescholar
-```
-
-## 快速开始
-
-```bash
-# 设置 API key（添加到 ~/.zshrc 或 ~/.bashrc 可持久保存）
-export GLM_API_KEY="sk-..."
-export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选，不设则使用免费 tier
-
-# 编辑 config.json 设置模型名称、base_url、搜索词等
-
-# 运行完整流水线
-awescholar --config config.json crawler run
-
-# 或直接传入搜索词
-awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
 ```
 
 ## 配置
@@ -190,6 +129,46 @@ awescholar --config config.json crawler run "perturbation prediction|single cell
 **`search.query`** — 如果设置了，`crawler run` 可以不传 CLI query 参数。
 
 支持的 LLM 提供商：任何 OpenAI 兼容 API（通过 `base_url`），如 GLM、DeepSeek、Gemini、Mistral、本地端点。
+
+## 使用
+
+### AI Agent
+
+安装 awescholar skill（见上方[安装](#安装)），然后直接告诉你的 agent 做什么 — 无需手动操作 CLI。
+
+**AI agent 能做什么：**
+
+- 一键执行完整发现流水线：搜索、标注、筛选、报告
+- 将新结果合并到项目数据 JSON 并重新生成 README
+- 按标题或 DOI 搜索 Semantic Scholar 并添加论文到存档
+- 为策展集合生成 RSS 订阅
+- 独立重新运行任意流水线步骤，支持自定义输入
+
+**你可以这样告诉你的 agent：**
+
+> "搜索最近关于 AI agents in biology 的论文，筛选 top 20，更新 README。"
+
+> "用我的 config 跑 awescholar 流水线，然后把结果合并到 docs/data.json。"
+
+> "按 DOI 找到这篇论文，添加到项目数据 JSON 里。"
+
+Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用命令、配置选项和工作流。
+
+### 人类使用
+
+```bash
+# 设置 API key（添加到 ~/.zshrc 或 ~/.bashrc 可持久保存）
+export GLM_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选，不设则使用免费 tier
+
+# 运行完整流水线
+awescholar --config config.json crawler run
+
+# 或直接传入搜索词
+awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+```
+
+完整命令参考见下方[命令](#命令)。
 
 ## 命令
 

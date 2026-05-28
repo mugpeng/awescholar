@@ -1,6 +1,6 @@
 <div align="center">
   <img src="./logo/hero.png" alt="awescholar" width="800">
-  <h1>awescholar: Scientific Literature Curator <a href="https://github.com/Webioinfo01/aweskill"><img src="https://raw.githubusercontent.com/Webioinfo01/aweskill/main/logo/aweskill-badge.svg" alt="aweskill companion"></a></h1>
+  <h1>awescholar: Scientific Literature Curator <a href="https://github.com/Webioinfo01/aweskill"><img src="https://raw.githubusercontent.com/Webioinfo01/aweskill/main/logo/aweskill-badge2.svg" alt="aweskill companion"></a></h1>
   <p><strong>AI agent 可自主执行的科学文献发现与策展。</strong></p>
   <p>搜索、标注、筛选和报告学术论文 — 告诉你的 agent 去做，或者自己跑 CLI。</p>
   <p>
@@ -20,6 +20,7 @@
     <img src="https://img.shields.io/github/stars/Webioinfo01/awescholar?style=flat-square" alt="GitHub stars">
   </p>
 </div>
+
 
 > 搜索、标注、筛选和报告学术论文 — 告诉你的 agent 去做，或者自己跑 CLI。
 

@@ -5,7 +5,8 @@
   <p>Search, annotate, filter, and report on academic papers — tell your agent to do it, or run the CLI yourself.</p>
   <p>
     <strong>English</strong> ·
-    <a href="./README_cn.md">简体中文</a>
+    <a href="./README_cn.md">简体中文</a> ·
+    <a href="https://we.webioinfo.top/">Webioinfo</a>
   </p>
   <p>
     <img src="https://img.shields.io/badge/version-0.1.6-7C3AED?style=flat-square" alt="Version">

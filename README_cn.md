@@ -5,7 +5,8 @@
   <p>搜索、标注、筛选和报告学术论文 — 告诉你的 agent 去做，或者自己跑 CLI。</p>
   <p>
     <a href="./README.md">English</a> ·
-    <strong>简体中文</strong>
+    <strong>简体中文</strong> ·
+    <a href="https://we.webioinfo.top/">Webioinfo</a>
   </p>
   <p>
     <img src="https://img.shields.io/badge/version-0.1.6-7C3AED?style=flat-square" alt="Version">

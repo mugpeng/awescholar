@@ -25,9 +25,11 @@
 
 一个轻量级 CLI 工具，自动化论文策展工作流：查询 Semantic Scholar、用 LLM 标注、按质量筛选、生成 Markdown 报告，并增量合并到长期维护的项目数据 JSON。同时支持人类和 AI agent 操作 — 安装 skill 后，你的 coding agent 可以通过自然语言指令执行完整流水线。
 
-## AI Agent 自主执行
+## 使用
 
-awescholar 专为 AI agent 自主操作而设计。安装 skill 后，你的 agent 可以通过自然语言指令执行完整的文献策展流水线 — 无需手动操作 CLI。
+### AI Agent
+
+安装 awescholar skill（见下方[安装](#安装)），然后直接告诉你的 agent 做什么 — 无需手动操作 CLI。
 
 **AI agent 能做什么：**
 
@@ -47,19 +49,34 @@ awescholar 专为 AI agent 自主操作而设计。安装 skill 后，你的 age
 
 Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用命令、配置选项和工作流。
 
+### 人类使用
+
+直接在终端运行 awescholar。典型工作流：
+
+```bash
+# 设置 API key
+export GLM_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选
+
+# 运行完整流水线
+awescholar --config config.json crawler run
+
+# 或分步执行
+awescholar crawler search "AI agent|LLM"
+awescholar crawler annotate
+awescholar crawler filter --limit 20
+awescholar crawler report
+```
+
+完整命令参考见下方[命令](#命令)。
+
 ## awescholar 驱动的项目
 
 - **[Awesome AI Meets Biology](https://github.com/Webioinfo01/Awesome-AI-Meets-Biology)** — AI × 生物学论文策展，由 awescholar 驱动自动发现、筛选和 README 更新。
 
 ## 安装
 
-### 直接安装
-
-```bash
-pip install awescholar
-```
-
-### 让 AI agent 配置 awescholar skill
+### 让 AI agent 安装
 
 如果你在 Claude Code、Codex、Cursor 等 coding agent 中工作，直接告诉它：
 
@@ -71,6 +88,12 @@ Agent 会先安装 `awescholar` CLI，然后在下面两种 awescholar skill 管
 
 1. **通过 [aweskill](https://aweskill.webioinfo.top/)** — 从 GitHub 安装和管理 skill，支持更新、投影和备份。需要 Node.js。由 [aweskill](https://aweskill.webioinfo.top/) 驱动 — AI 编程 Agent 的通用 skill 管理器。
 2. **直接复制** — 将 `SKILL.md` 下载到 agent 的 skill 目录。除 Python 外无需额外依赖，但后续更新需要手动重新复制。
+
+### pip
+
+```bash
+pip install awescholar
+```
 
 ## 快速开始
 

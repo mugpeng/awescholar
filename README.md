@@ -25,11 +25,13 @@
 
 A lightweight CLI that automates the paper curation workflow: query Semantic Scholar, annotate with LLM, filter by quality, generate Markdown reports, and incrementally merge into a maintained project data JSON. Designed for both human and AI-agent operation — install the skill, and your coding agent can run the entire pipeline from natural-language requests.
 
-## AI Agent Ready
+## Usage
 
-awescholar is designed for AI agents to operate autonomously. Install the skill, and your agent can run the full literature curation pipeline from natural-language requests — no manual CLI steps needed.
+### AI Agent
 
-**What an AI agent can do with awescholar:**
+Install the awescholar skill (see [Install](#install) below), then just tell your agent what to do — no manual CLI steps needed.
+
+**What an AI agent can do:**
 
 - Run the full discovery pipeline: search, annotate, filter, report — in one command
 - Merge new results into the project data JSON and regenerate the README
@@ -37,7 +39,7 @@ awescholar is designed for AI agents to operate autonomously. Install the skill,
 - Generate RSS feeds for curated collections
 - Re-run any pipeline step independently with custom input
 
-**Example requests you can give your agent:**
+**Example requests:**
 
 > "Search for recent papers about AI agents in biology, filter the top 20, and update the README."
 
@@ -47,19 +49,34 @@ awescholar is designed for AI agents to operate autonomously. Install the skill,
 
 The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understand all available commands, config options, and workflows.
 
+### Human
+
+Run awescholar directly from the terminal. The typical workflow:
+
+```bash
+# Set API keys
+export GLM_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # optional
+
+# Run the full pipeline
+awescholar --config config.json crawler run
+
+# Or step by step
+awescholar crawler search "AI agent|LLM"
+awescholar crawler annotate
+awescholar crawler filter --limit 20
+awescholar crawler report
+```
+
+See [Commands](#commands) below for the full CLI reference.
+
 ## Powered by awescholar
 
 - **[Awesome AI Meets Biology](https://github.com/Webioinfo01/Awesome-AI-Meets-Biology)** — AI x biology paper curation powered by awescholar for automated discovery, filtering, and README updates.
 
 ## Install
 
-### Direct install
-
-```bash
-pip install awescholar
-```
-
-### Ask an AI agent to configure the awescholar skill
+### Ask an AI agent
 
 If you are working inside Claude Code, Codex, Cursor, or another coding agent, tell it:
 
@@ -71,6 +88,12 @@ The agent will first install the `awescholar` CLI, then choose one of two awesch
 
 1. **Via [aweskill](https://aweskill.webioinfo.top/)** — installs and manages the skill from GitHub with update, projection, and backup support. Requires Node.js. Powered by [aweskill](https://aweskill.webioinfo.top/) — the universal skill manager for AI coding agents.
 2. **Direct copy** — downloads `SKILL.md` into the agent's skill directory. No extra dependencies beyond Python, but future updates require copying the file again manually.
+
+### pip
+
+```bash
+pip install awescholar
+```
 
 ## Quick Start
 

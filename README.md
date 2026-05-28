@@ -51,6 +51,10 @@ The agent will first install the `awescholar` CLI, then choose one of two awesch
 pip install awescholar
 ```
 
+## Supported by aweskill
+
+awescholar is powered by [aweskill](https://github.com/Webioinfo01/aweskill) — a CLI-first skill package manager that AI agents can operate themselves. aweskill handles skill installation, updates, projection, and backup across 47+ coding agents including Claude Code, Codex, Cursor, Gemini CLI, and more.
+
 ## Usage
 
 ### AI Agent

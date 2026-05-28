@@ -51,6 +51,10 @@ Agent 会先安装 `awescholar` CLI，然后在下面两种 awescholar skill 管
 pip install awescholar
 ```
 
+## aweskill 支持
+
+awescholar 由 [aweskill](https://github.com/Webioinfo01/aweskill) 驱动 — 一个以 CLI 为核心的 Skill 包管理器，AI agent 也能自己调用和维护。aweskill 负责 skill 的安装、更新、投影和备份，支持 47+ 编程 agent，包括 Claude Code、Codex、Cursor、Gemini CLI 等。
+
 ## 使用
 
 ### AI Agent

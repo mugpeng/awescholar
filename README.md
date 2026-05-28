@@ -196,6 +196,8 @@ Each subcommand accepts `--input` (or positional `input` for report) to read fro
 
 `updater readme` updates only the generated region between `<!-- AWESCHOLAR:START -->` and `<!-- AWESCHOLAR:END -->`. That generated region contains the awescholar table of contents and category tables. Keep custom headings, citation, and project text outside that region. Existing README files without those markers are rejected instead of being overwritten. If the README does not exist yet, `--title` controls the generated top-level heading.
 
+When `--readme` is not specified, `updater readme` auto-discovers all `README*.md` / `readme*.md` files in the current working directory that contain `<!-- AWESCHOLAR:START -->` markers and updates each one. This is useful for maintaining multilingual READMEs (e.g., `readme.md` + `README.zh-CN.md`) — the table content stays in sync automatically.
+
 ## Development
 
 ```bash

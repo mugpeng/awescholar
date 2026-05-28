@@ -1,5 +1,6 @@
 """Utilities: JSON merge, README generation, RSS feed."""
 
+import glob
 import json
 import os
 import re
@@ -12,6 +13,19 @@ from .data_fields import first_present, merge_preserving_nonempty, normalize_pro
 
 README_START_MARKER = "<!-- AWESCHOLAR:START -->"
 README_END_MARKER = "<!-- AWESCHOLAR:END -->"
+
+
+def discover_readme_targets(search_dir: str) -> list[str]:
+    """Find README files in search_dir that contain AWESCHOLAR markers."""
+    targets = []
+    for pattern in ("README*.md", "readme*.md"):
+        for path in glob.glob(os.path.join(search_dir, pattern)):
+            if not os.path.isfile(path):
+                continue
+            with open(path, "r", encoding="utf-8") as f:
+                if README_START_MARKER in f.read():
+                    targets.append(path)
+    return sorted(set(targets))
 
 
 def merge_new_to_archive(new_path: str, archive_path: str) -> dict:

@@ -185,16 +185,23 @@ def cmd_update(args: argparse.Namespace, config: dict) -> int | None:
 
 
 def cmd_readme(args: argparse.Namespace, config: dict) -> int | None:
-    from .utils import update_readme
+    from .utils import discover_readme_targets, update_readme
 
-    readme_path = args.readme or os.path.join(os.path.dirname(args.archive), "readme.md")
-    update_readme(
-        archive_path=args.archive, readme_path=readme_path,
-        project_title=args.title or "Awesome Scholar",
-        project_description=args.description or "",
-        no_backup=args.no_backup,
-    )
-    print(f"README updated at {readme_path}")
+    if args.readme:
+        targets = [args.readme]
+    else:
+        targets = discover_readme_targets(".")
+        if not targets:
+            targets = [os.path.join(os.path.dirname(args.archive), "readme.md")]
+
+    for readme_path in targets:
+        update_readme(
+            archive_path=args.archive, readme_path=readme_path,
+            project_title=args.title or "Awesome Scholar",
+            project_description=args.description or "",
+            no_backup=args.no_backup,
+        )
+        print(f"README updated at {readme_path}")
 
 
 def cmd_rss(args: argparse.Namespace, config: dict) -> int | None:

@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.1.7
+
+Documentation restructure — AI agent usage guide, install/usage flow, and contributing docs.
+
+### Highlights
+
+- New `README.ai.md` — dedicated install and usage guide for AI coding agents
+- README restructure: move "Powered by aweskill" to top, merge Quick Start into Usage after Config, add AI/human usage sections
+- Add aweskill badge to README titles
+- Add Webioinfo org link to README
+- Update CONTRIBUTING.md with missing modules and cross-reference from README
+- Add `docs/todo/refactor_0528.md` planning notes
+
 ## v0.1.6
 
 Module refactor, multi-README auto-discovery, and Python 3.10 compatibility fix.

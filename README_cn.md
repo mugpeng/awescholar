@@ -206,10 +206,11 @@ awescholar updater add --archive data.json            # 交互式添加单条记
 
 ## 开发
 
+详见 [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) 了解开发环境搭建、架构、测试和代码风格。
+
 ```bash
 pip install -e ".[dev]"
 pytest
-ruff check .
 ```
 
 ## 工作流

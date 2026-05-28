@@ -17,18 +17,26 @@ Requires Python >= 3.10.
 src/awescholar/
   __init__.py       # Version
   cli.py            # CLI wiring, config loading, argument parsing
+  config.py         # Config loading and ${VAR} expansion
   pipeline.py       # Step orchestration: search -> annotate -> filter -> report
   search.py         # Semantic Scholar API client
   llm.py            # LiteLLM completion wrapper
   prompts.py        # System prompt strings
   schemas.py        # Pydantic models for annotation and filtering
+  categories.py     # Category normalization and matching
+  data_fields.py    # Data field definitions
+  record.py         # Record construction and helpers
   db.py             # SQLAlchemy ORM (Paper model) and session factory
   utils.py          # Re-export facade (imports from archive, readme, rss)
   archive.py        # Archive merge operations (new2old, old2new)
   readme.py         # README generation and update
   rss.py            # RSS feed generation
 tests/
+  test_cli.py       # CLI argument parsing and config tests
+  test_config.py    # Config expansion tests
   test_db.py        # DB and Paper model tests
+  test_pipeline.py  # Pipeline orchestration tests
+  test_record.py    # Record construction tests
   test_schemas.py   # Pydantic schema tests
   test_utils.py     # Merge, README, RSS utility tests
 ```

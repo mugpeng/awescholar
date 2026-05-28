@@ -206,10 +206,11 @@ When `--readme` is not specified, `updater readme` auto-discovers all `README*.m
 
 ## Development
 
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for setup, architecture, testing, and code style.
+
 ```bash
 pip install -e ".[dev]"
 pytest
-ruff check .
 ```
 
 ## Workflow

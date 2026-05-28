@@ -50,7 +50,49 @@ The agent will first install the `awescholar` CLI, then choose one of two awesch
 pip install awescholar
 ```
 
-## Config
+## Usage
+
+### AI Agent
+
+Install the awescholar skill (see [Install](#install)), then just tell your agent what to do — no manual CLI steps needed. If the agent hasn't configured `config.json` yet or you need to change model/search settings, see [Detailed Config](#detailed-config) below.
+
+**What an AI agent can do:**
+
+- Run the full discovery pipeline: search, annotate, filter, report — in one command
+- Merge new results into the project data JSON and regenerate the README
+- Search Semantic Scholar by title or DOI and add papers to the archive
+- Generate RSS feeds for curated collections
+- Re-run any pipeline step independently with custom input
+
+**Example requests:**
+
+> "Search for recent papers about AI agents in biology, filter the top 20, and update the README."
+
+> "Run the awescholar pipeline with my config, then merge the results into docs/data.json."
+
+> "Find this paper by DOI and add it to the project data JSON."
+
+The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understand all available commands, config options, and workflows.
+
+### Human
+
+```bash
+# Set API keys (add to ~/.zshrc or ~/.bashrc to persist)
+export GLM_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # optional, without it uses free tier
+
+# Run the full pipeline
+awescholar --config config.json crawler run
+
+# Or pass query directly
+awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+```
+
+See [Commands](#commands) below for the full CLI reference.
+
+## Detailed Config
+
+Copy `config.example.json` from the [repo root](https://github.com/Webioinfo01/awescholar/blob/main/config.example.json) and fill in your values — or set env vars directly and skip the config file.
 
 ```json
 {
@@ -99,7 +141,7 @@ pip install awescholar
 }
 ```
 
-`${VAR}` patterns are expanded from environment variables at load time. Copy `config.example.json` and fill in your values — or set env vars directly and skip the config file.
+`${VAR}` patterns are expanded from environment variables at load time.
 
 **`model.name`** — just the model name, e.g. `glm-5.1`, `deepseek-chat`, `gpt-4o`. The `openai/` prefix is auto-prepended for OpenAI-compatible endpoints — do NOT add it manually.
 
@@ -129,46 +171,6 @@ pip install awescholar
 **`search.query`** — if set, `crawler run` can be called without a CLI query argument.
 
 Supported LLM providers: any OpenAI-compatible API via `base_url` (e.g. GLM, DeepSeek, Gemini, Mistral, local endpoints).
-
-## Usage
-
-### AI Agent
-
-Install the awescholar skill (see [Install](#install)), then just tell your agent what to do — no manual CLI steps needed.
-
-**What an AI agent can do:**
-
-- Run the full discovery pipeline: search, annotate, filter, report — in one command
-- Merge new results into the project data JSON and regenerate the README
-- Search Semantic Scholar by title or DOI and add papers to the archive
-- Generate RSS feeds for curated collections
-- Re-run any pipeline step independently with custom input
-
-**Example requests:**
-
-> "Search for recent papers about AI agents in biology, filter the top 20, and update the README."
-
-> "Run the awescholar pipeline with my config, then merge the results into docs/data.json."
-
-> "Find this paper by DOI and add it to the project data JSON."
-
-The agent uses the [SKILL.md](resources/skills/awescholar/SKILL.md) to understand all available commands, config options, and workflows.
-
-### Human
-
-```bash
-# Set API keys (add to ~/.zshrc or ~/.bashrc to persist)
-export GLM_API_KEY="sk-..."
-export SEMANTICSCHOLAR_API_KEY="your-key"   # optional, without it uses free tier
-
-# Run the full pipeline
-awescholar --config config.json crawler run
-
-# Or pass query directly
-awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
-```
-
-See [Commands](#commands) below for the full CLI reference.
 
 ## Commands
 

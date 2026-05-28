@@ -133,6 +133,43 @@ Replace `<skill-directory>` with the path from step B1.
 
 ---
 
+## Step 3: Configure awescholar
+
+After installing the CLI and skill, set up the config file before running any pipeline.
+
+#### 1. Copy the example config
+
+```bash
+cp config.example.json config.json
+```
+
+`config.example.json` is in the [awescholar repo root](https://github.com/Webioinfo01/awescholar/blob/main/config.example.json). If the repo is not available locally, download it:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Webioinfo01/awescholar/main/config.example.json -o config.json
+```
+
+#### 2. Set API keys
+
+```bash
+export GLM_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # optional, uses free tier without it
+```
+
+Or add them to `~/.zshrc` / `~/.bashrc` to persist. `${VAR}` patterns in `config.json` are expanded from environment variables at load time.
+
+#### 3. Edit config.json
+
+Key fields to check:
+- **`model.name`** — model name (e.g. `glm-5.1`, `deepseek-chat`, `gpt-4o`). The `openai/` prefix is auto-prepended for OpenAI-compatible endpoints.
+- **`model.base_url`** — required for non-default endpoints. Must be OpenAI-compatible.
+- **`search.query`** — default search terms
+- **`search.publication_date`** — date range filter
+
+See the [Detailed Config](https://github.com/Webioinfo01/awescholar#detailed-config) section in the README for the full reference.
+
+---
+
 ## Final Step (both options)
 
 After setup, the agent needs to be restarted to pick up the new skill. Tell the user:

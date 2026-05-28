@@ -50,7 +50,49 @@ Agent 会先安装 `awescholar` CLI，然后在下面两种 awescholar skill 管
 pip install awescholar
 ```
 
-## 配置
+## 使用
+
+### AI Agent
+
+安装 awescholar skill（见上方[安装](#安装)），然后直接告诉你的 agent 做什么 — 无需手动操作 CLI。如果 agent 还没有配置好 `config.json` 或需要修改模型/搜索设置，参考下方[详细配置](#详细配置)。
+
+**AI agent 能做什么：**
+
+- 一键执行完整发现流水线：搜索、标注、筛选、报告
+- 将新结果合并到项目数据 JSON 并重新生成 README
+- 按标题或 DOI 搜索 Semantic Scholar 并添加论文到存档
+- 为策展集合生成 RSS 订阅
+- 独立重新运行任意流水线步骤，支持自定义输入
+
+**你可以这样告诉你的 agent：**
+
+> "搜索最近关于 AI agents in biology 的论文，筛选 top 20，更新 README。"
+
+> "用我的 config 跑 awescholar 流水线，然后把结果合并到 docs/data.json。"
+
+> "按 DOI 找到这篇论文，添加到项目数据 JSON 里。"
+
+Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用命令、配置选项和工作流。
+
+### 人类使用
+
+```bash
+# 设置 API key（添加到 ~/.zshrc 或 ~/.bashrc 可持久保存）
+export GLM_API_KEY="sk-..."
+export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选，不设则使用免费 tier
+
+# 运行完整流水线
+awescholar --config config.json crawler run
+
+# 或直接传入搜索词
+awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
+```
+
+完整命令参考见下方[命令](#命令)。
+
+## 详细配置
+
+从 [repo 根目录](https://github.com/Webioinfo01/awescholar/blob/main/config.example.json) 复制 `config.example.json` 并填入你的值 — 或直接设置环境变量，跳过配置文件。
 
 ```json
 {
@@ -99,7 +141,7 @@ pip install awescholar
 }
 ```
 
-`${VAR}` 模式在加载时从环境变量展开。复制 `config.example.json` 并填入你的值 — 或直接设置环境变量，跳过配置文件。
+`${VAR}` 模式在加载时从环境变量展开。
 
 **`model.name`** — 只写模型名称，如 `glm-5.1`、`deepseek-chat`、`gpt-4o`。`openai/` 前缀会自动添加，不要手动写。
 
@@ -129,46 +171,6 @@ pip install awescholar
 **`search.query`** — 如果设置了，`crawler run` 可以不传 CLI query 参数。
 
 支持的 LLM 提供商：任何 OpenAI 兼容 API（通过 `base_url`），如 GLM、DeepSeek、Gemini、Mistral、本地端点。
-
-## 使用
-
-### AI Agent
-
-安装 awescholar skill（见上方[安装](#安装)），然后直接告诉你的 agent 做什么 — 无需手动操作 CLI。
-
-**AI agent 能做什么：**
-
-- 一键执行完整发现流水线：搜索、标注、筛选、报告
-- 将新结果合并到项目数据 JSON 并重新生成 README
-- 按标题或 DOI 搜索 Semantic Scholar 并添加论文到存档
-- 为策展集合生成 RSS 订阅
-- 独立重新运行任意流水线步骤，支持自定义输入
-
-**你可以这样告诉你的 agent：**
-
-> "搜索最近关于 AI agents in biology 的论文，筛选 top 20，更新 README。"
-
-> "用我的 config 跑 awescholar 流水线，然后把结果合并到 docs/data.json。"
-
-> "按 DOI 找到这篇论文，添加到项目数据 JSON 里。"
-
-Agent 通过 [SKILL.md](resources/skills/awescholar/SKILL.md) 理解所有可用命令、配置选项和工作流。
-
-### 人类使用
-
-```bash
-# 设置 API key（添加到 ~/.zshrc 或 ~/.bashrc 可持久保存）
-export GLM_API_KEY="sk-..."
-export SEMANTICSCHOLAR_API_KEY="your-key"   # 可选，不设则使用免费 tier
-
-# 运行完整流水线
-awescholar --config config.json crawler run
-
-# 或直接传入搜索词
-awescholar --config config.json crawler run "perturbation prediction|single cell" --date 2025-01-01:2025-05-30
-```
-
-完整命令参考见下方[命令](#命令)。
 
 ## 命令
 

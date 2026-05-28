@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.6
+
+Module refactor, multi-README auto-discovery, and Python 3.10 compatibility fix.
+
+### Highlights
+
+- Refactor: split monolithic `utils.py` into focused modules — `archive.py` (merge operations), `readme.py` (README generation), `rss.py` (RSS feed), with `utils.py` as a backwards-compatible re-export facade
+- `updater readme` auto-discovers all README files containing `<!-- AWESCHOLAR:START -->` markers when `--readme` is not specified — supports multilingual READMEs out of the box
+- Fix: `html.escape` in XML paper snippets to prevent injection in LLM prompts
+- Fix: use `tomli` fallback for Python 3.10 compatibility in tests
+- Update CONTRIBUTING.md architecture docs to reflect new module layout
+
 ## v0.1.5
 
 Agent install flow, filtering config propagation, licensing metadata, and test maintenance.
